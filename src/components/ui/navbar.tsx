@@ -40,7 +40,7 @@ const Navbar = () => {
               Dashboard
             </Link>
           )}
-          <Link
+          {/* <Link
             to="/profile"
             className={cn(
               "text-sm font-medium transition-colors hover:text-primary",
@@ -48,7 +48,7 @@ const Navbar = () => {
             )}
           >
             Profile
-          </Link>
+          </Link> */}
         </div>
 
         <div className="flex items-center space-x-3">
