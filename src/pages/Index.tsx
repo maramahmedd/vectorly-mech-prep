@@ -93,6 +93,74 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Example Problems Preview Section */}
+      <section className="py-12 bg-background border-b">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold mb-2">Sample Interview Questions</h2>
+            <p className="text-muted-foreground">Real problems from top companies</p>
+          </div>
+          
+          <div className="overflow-x-auto pb-4">
+            <div className="flex space-x-4 w-max">
+              {[
+                {
+                  difficulty: "Easy",
+                  title: "Force Analysis in Truss Structures",
+                  tags: ["Statics", "Automotive"],
+                  companies: "Ford, GM"
+                },
+                {
+                  difficulty: "Medium", 
+                  title: "Heat Engine Efficiency Analysis",
+                  tags: ["Thermodynamics", "Automotive"],
+                  companies: "Tesla, Toyota"
+                },
+                {
+                  difficulty: "Hard",
+                  title: "Fluid Flow in Turbine Design",
+                  tags: ["Fluid Mechanics", "Aerospace"],
+                  companies: "Boeing, SpaceX"
+                },
+                {
+                  difficulty: "Medium",
+                  title: "Material Selection for High-Stress Components",
+                  tags: ["Materials", "Aerospace"],
+                  companies: "Lockheed Martin"
+                },
+                {
+                  difficulty: "Easy",
+                  title: "Basic Vibration Analysis",
+                  tags: ["Dynamics", "Manufacturing"],
+                  companies: "GE, Caterpillar"
+                }
+              ].map((problem, index) => (
+                <Card key={index} className="w-80 flex-shrink-0 shadow-medium hover:shadow-strong transition-all duration-300">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge variant={problem.difficulty === "Easy" ? "secondary" : problem.difficulty === "Medium" ? "default" : "destructive"}>
+                        {problem.difficulty}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">{problem.companies}</span>
+                    </div>
+                    <CardTitle className="text-lg">{problem.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-1">
+                      {problem.tags.map((tag, tagIndex) => (
+                        <Badge key={tagIndex} variant="outline" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section className="py-20 bg-gradient-card">
         <div className="container mx-auto px-4">
@@ -103,7 +171,7 @@ const Index = () => {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
             {features.map((feature, index) => (
               <Card key={index} className="border-0 shadow-medium hover:shadow-strong transition-all duration-300 hover:scale-105">
                 <CardHeader className="text-center">
@@ -117,6 +185,49 @@ const Index = () => {
                 </CardContent>
               </Card>
             ))}
+          </div>
+
+          {/* Testimonials */}
+          <div className="text-center mb-12">
+            <h3 className="text-2xl font-bold mb-8">What Students Say</h3>
+            <div className="grid md:grid-cols-3 gap-8">
+              {[
+                {
+                  name: "Sarah Chen",
+                  role: "ME Student, UC Berkeley", 
+                  text: "Vectorly helped me land my Tesla internship! The theory-linked problems were exactly what I needed.",
+                  company: "Tesla"
+                },
+                {
+                  name: "Marcus Rodriguez",
+                  role: "Recent Graduate",
+                  text: "Finally, interview prep that actually understands mechanical engineering. Got offers from 3 companies!",
+                  company: "Ford"
+                },
+                {
+                  name: "Emily Johnson", 
+                  role: "ME Student, MIT",
+                  text: "The industry-specific filters saved me so much time. Focused prep for aerospace interviews worked perfectly.",
+                  company: "Boeing"
+                }
+              ].map((testimonial, index) => (
+                <Card key={index} className="shadow-medium">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center mb-4">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="w-4 h-4 text-warning fill-current" />
+                      ))}
+                    </div>
+                    <p className="text-muted-foreground mb-4">"{testimonial.text}"</p>
+                    <div className="text-sm">
+                      <div className="font-semibold">{testimonial.name}</div>
+                      <div className="text-muted-foreground">{testimonial.role}</div>
+                      <div className="text-primary font-medium">Now at {testimonial.company}</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       </section>

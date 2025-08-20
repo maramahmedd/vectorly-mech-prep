@@ -36,12 +36,12 @@ const Navbar = () => {
           </Link>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm">
+        <div className="flex items-center space-x-3">
+          <Button variant="ghost" size="sm">
             Sign In
           </Button>
-          <Button size="sm">
-            Get Started
+          <Button variant="hero" size="sm" className="animate-pulse shadow-strong">
+            Start Free Trial
           </Button>
         </div>
       </div>
