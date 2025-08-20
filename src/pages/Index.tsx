@@ -4,8 +4,24 @@ import Navbar from "@/components/ui/navbar";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { BookOpen, Target, TrendingUp, Users, CheckCircle, Star, ArrowRight } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 const Index = () => {
+  const horizontalScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (horizontalScrollRef.current) {
+        const scrollY = window.scrollY;
+        const scrollSpeed = 0.5; // Adjust this value to control scroll speed
+        horizontalScrollRef.current.scrollLeft = scrollY * scrollSpeed;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const features = [
     {
       icon: BookOpen,
@@ -68,11 +84,13 @@ const Index = () => {
               Practice real interview questions, master essential theory, and land your dream internship.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="hero" size="lg" className="text-lg" asChild>
+              <Button 
+                variant="hero" 
+                size="lg" 
+                className="text-lg hover:bg-green-600 hover:border-green-600 transition-all duration-200" 
+                asChild
+              >
                 <Link to="/practice">Start Practicing <ArrowRight className="ml-2" /></Link>
-              </Button>
-              <Button variant="outline" size="lg" className="text-lg border-white text-white hover:bg-white hover:text-primary">
-                View Demo
               </Button>
             </div>
             <div className="mt-8 flex items-center justify-center gap-6 text-white/80">
@@ -101,7 +119,7 @@ const Index = () => {
             <p className="text-muted-foreground">Real problems from top companies</p>
           </div>
           
-          <div className="overflow-x-auto pb-4">
+          <div className="overflow-x-auto pb-4" ref={horizontalScrollRef}>
             <div className="flex space-x-4 w-max">
               {[
                 {
@@ -133,6 +151,24 @@ const Index = () => {
                   title: "Basic Vibration Analysis",
                   tags: ["Dynamics", "Manufacturing"],
                   companies: "GE, Caterpillar"
+                },
+                {
+                  difficulty: "Hard",
+                  title: "Advanced Thermal Analysis",
+                  tags: ["Heat Transfer", "Energy"],
+                  companies: "General Electric"
+                },
+                {
+                  difficulty: "Medium",
+                  title: "Stress Concentration Analysis",
+                  tags: ["Solid Mechanics", "Automotive"],
+                  companies: "BMW, Mercedes"
+                },
+                {
+                  difficulty: "Easy",
+                  title: "Basic Fluid Statics",
+                  tags: ["Fluid Mechanics", "Civil"],
+                  companies: "Bechtel, AECOM"
                 }
               ].map((problem, index) => (
                 <Card key={index} className="w-80 flex-shrink-0 shadow-medium hover:shadow-strong transition-all duration-300">

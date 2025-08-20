@@ -40,7 +40,7 @@ const Navbar = () => {
           <Button variant="ghost" size="sm">
             Sign In
           </Button>
-          <Button variant="hero" size="sm" className="animate-pulse shadow-strong">
+          <Button variant="hero" size="sm" className="shadow-strong">
             Start Free Trial
           </Button>
         </div>

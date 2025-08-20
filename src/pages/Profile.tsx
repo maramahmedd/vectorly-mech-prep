@@ -2,8 +2,24 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from "@/components/ui/navbar";
-import { Calendar, TrendingUp, Target, Award, BookOpen, Clock, Flame, Star } from "lucide-react";
+import { Calendar, TrendingUp, Target, Award, BookOpen, Clock, Flame, Star, Trophy, User, BarChart3 } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
 
 const Profile = () => {
   const userStats = {
@@ -17,8 +33,32 @@ const Profile = () => {
     longestStreak: 23,
     averageTime: "28 min",
     accuracy: 87,
-    rank: "Advanced"
+    rank: "Advanced",
+    totalHours: 28.5,
+    weeklyGoal: 50
   };
+
+  // Dashboard data
+  const weeklyProgress = [
+    { day: "Mon", attempted: 8, solved: 6 },
+    { day: "Tue", attempted: 12, solved: 9 },
+    { day: "Wed", attempted: 15, solved: 12 },
+    { day: "Thu", attempted: 10, solved: 8 },
+    { day: "Fri", attempted: 14, solved: 11 },
+    { day: "Sat", attempted: 6, solved: 5 },
+    { day: "Sun", attempted: 4, solved: 3 },
+  ];
+
+  const subjectDistribution = [
+    { subject: "Thermodynamics", value: 28, solved: 12, total: 18 },
+    { subject: "Fluid Mechanics", value: 22, solved: 8, total: 15 },
+    { subject: "Solid Mechanics", value: 20, solved: 15, total: 22 },
+    { subject: "Materials Science", value: 15, solved: 7, total: 12 },
+    { subject: "Heat Transfer", value: 10, solved: 3, total: 8 },
+    { subject: "Dynamics", value: 5, solved: 2, total: 6 },
+  ];
+
+  const COLORS = ["#DC2626", "#EA580C", "#D97706", "#CA8A04", "#65A30D", "#16A34A"];
 
   const difficultyStats = [
     { level: "Easy", solved: 25, total: 45, color: "bg-success" },
@@ -26,21 +66,12 @@ const Profile = () => {
     { level: "Hard", solved: 4, total: 44, color: "bg-destructive" }
   ];
 
-  const subjectStats = [
-    { subject: "Thermodynamics", solved: 12, total: 28, progress: 43 },
-    { subject: "Solid Mechanics", solved: 15, total: 32, progress: 47 },
-    { subject: "Fluid Dynamics", solved: 8, total: 25, progress: 32 },
-    { subject: "Materials Science", solved: 7, total: 22, progress: 32 },
-    { subject: "Dynamics", solved: 3, total: 18, progress: 17 },
-    { subject: "Heat Transfer", solved: 2, total: 31, progress: 6 }
-  ];
-
   const recentActivity = [
-    { date: "2024-01-15", problem: "Heat Engine Efficiency Analysis", difficulty: "medium", solved: true },
-    { date: "2024-01-14", problem: "Beam Deflection Under Load", difficulty: "easy", solved: true },
-    { date: "2024-01-13", problem: "Material Selection for High Temperature", difficulty: "medium", solved: true },
-    { date: "2024-01-12", problem: "Vibration Analysis of Rotating Shaft", difficulty: "hard", solved: false },
-    { date: "2024-01-11", problem: "Heat Transfer in Electronics Cooling", difficulty: "easy", solved: true }
+    { date: "2024-01-15", problem: "Heat Engine Efficiency Analysis", difficulty: "medium", solved: true, timeSpent: 28 },
+    { date: "2024-01-14", problem: "Beam Deflection Under Load", difficulty: "easy", solved: true, timeSpent: 15 },
+    { date: "2024-01-13", problem: "Material Selection for High Temperature", difficulty: "medium", solved: true, timeSpent: 22 },
+    { date: "2024-01-12", problem: "Vibration Analysis of Rotating Shaft", difficulty: "hard", solved: false, timeSpent: 45 },
+    { date: "2024-01-11", problem: "Heat Transfer in Electronics Cooling", difficulty: "easy", solved: true, timeSpent: 25 }
   ];
 
   const achievements = [
@@ -82,6 +113,37 @@ const Profile = () => {
     return "bg-success";
   };
 
+  // KPI Component for Dashboard
+  function Kpi({ label, value, sub, icon: Icon, trend }: { 
+    label: string; 
+    value: string; 
+    sub?: string; 
+    icon: any;
+    trend?: "up" | "down" | "neutral";
+  }) {
+    return (
+      <Card className="rounded-2xl shadow-medium hover:shadow-strong transition-all duration-200">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm text-muted-foreground">{label}</CardTitle>
+            <Icon className="w-4 h-4 text-primary" />
+          </div>
+        </CardHeader>
+        <CardContent className="flex items-end gap-2">
+          <div className="text-3xl font-semibold">{value}</div>
+          {sub && (
+            <div className={`text-xs flex items-center gap-1 ${
+              trend === 'up' ? 'text-success' : trend === 'down' ? 'text-destructive' : 'text-muted-foreground'
+            }`}>
+              {trend === 'up' && <TrendingUp className="w-3 h-3" />}
+              {sub}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-card">
       <Navbar />
@@ -89,75 +151,189 @@ const Profile = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Profile Header */}
         <div className="mb-8">
-          <div className="flex flex-col lg:flex-row gap-6">
-            <Card className="flex-1 shadow-medium">
+          <Card className="shadow-medium">
+            <CardHeader>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                  {userStats.name.split(' ').map(n => n[0]).join('')}
+                </div>
+                <div className="flex-1">
+                  <CardTitle className="text-2xl">{userStats.name}</CardTitle>
+                  <p className="text-muted-foreground">{userStats.major} • {userStats.university}</p>
+                  <p className="text-sm text-muted-foreground">Class of {userStats.graduationYear}</p>
+                </div>
+                <div className="text-right">
+                  <Badge variant="outline" className="mb-2">{userStats.rank}</Badge>
+                  <div className="text-sm text-muted-foreground">
+                    Rank: #{Math.floor(Math.random() * 500) + 100}
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+        </div>
+
+        {/* Tabs for Profile sections */}
+        <Tabs defaultValue="dashboard" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Activity
+            </TabsTrigger>
+            <TabsTrigger value="achievements" className="flex items-center gap-2">
+              <Trophy className="w-4 h-4" />
+              Achievements
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Dashboard Tab */}
+          <TabsContent value="dashboard" className="space-y-6">
+            {/* KPIs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              <Kpi 
+                label="Problems Solved" 
+                value={userStats.totalSolved.toString()} 
+                sub="↑ 6 this week" 
+                icon={Target}
+                trend="up"
+              />
+              <Kpi 
+                label="Current Streak" 
+                value={`${userStats.currentStreak}d`} 
+                sub="🔥 Personal best: 23d" 
+                icon={Flame}
+              />
+              <Kpi 
+                label="Accuracy Rate" 
+                value={`${userStats.accuracy}%`} 
+                sub="↑ 3% this month" 
+                icon={TrendingUp}
+                trend="up"
+              />
+              <Kpi 
+                label="Study Hours" 
+                value={`${userStats.totalHours}h`} 
+                sub="This month" 
+                icon={Clock}
+              />
+            </div>
+
+            {/* Weekly Goal Progress */}
+            <Card className="rounded-2xl shadow-medium">
               <CardHeader>
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                    {userStats.name.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <div>
-                    <CardTitle className="text-2xl">{userStats.name}</CardTitle>
-                    <p className="text-muted-foreground">{userStats.major} • {userStats.university}</p>
-                    <p className="text-sm text-muted-foreground">Class of {userStats.graduationYear}</p>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Star className="w-5 h-5 text-warning" />
+                    Weekly Goal Progress
+                  </CardTitle>
+                  <Badge variant="outline">{userStats.totalSolved}/{userStats.weeklyGoal} problems</Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">{userStats.totalSolved}</div>
-                    <div className="text-sm text-muted-foreground">Problems Solved</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-accent">{userStats.currentStreak}</div>
-                    <div className="text-sm text-muted-foreground">Day Streak</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-success">{userStats.accuracy}%</div>
-                    <div className="text-sm text-muted-foreground">Accuracy</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-warning">{userStats.averageTime}</div>
-                    <div className="text-sm text-muted-foreground">Avg Time</div>
-                  </div>
-                </div>
+                <Progress value={(userStats.totalSolved / userStats.weeklyGoal) * 100} className="h-3 mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  {userStats.weeklyGoal - userStats.totalSolved} problems remaining to reach your weekly goal
+                </p>
               </CardContent>
             </Card>
 
-            <Card className="lg:w-80 shadow-medium">
+            {/* Charts */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <Card className="xl:col-span-2 rounded-2xl shadow-medium">
+                <CardHeader>
+                  <CardTitle>Weekly Performance</CardTitle>
+                </CardHeader>
+                <CardContent className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={weeklyProgress} margin={{ left: 8, right: 16 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="day" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line 
+                        type="monotone" 
+                        dataKey="attempted" 
+                        stroke="#8884d8" 
+                        strokeWidth={2} 
+                        dot={false}
+                        name="Attempted"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="solved" 
+                        stroke="#82ca9d" 
+                        strokeWidth={2} 
+                        dot={false}
+                        name="Solved"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-2xl shadow-medium">
+                <CardHeader>
+                  <CardTitle>Subject Focus</CardTitle>
+                </CardHeader>
+                <CardContent className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Tooltip 
+                        formatter={(value, name) => [`${value}%`, 'Time Spent']}
+                      />
+                      <Legend />
+                      <Pie 
+                        data={subjectDistribution} 
+                        dataKey="value" 
+                        nameKey="subject" 
+                        outerRadius={80} 
+                        label={({subject, value}) => `${subject}: ${value}%`}
+                      >
+                        {subjectDistribution.map((entry, i) => (
+                          <Cell key={entry.subject} fill={COLORS[i % COLORS.length]} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Subject Progress Detail */}
+            <Card className="rounded-2xl shadow-medium">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  Progress Overview
+                  <BookOpen className="w-5 h-5" />
+                  Subject Mastery Progress
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span>Overall Progress</span>
-                      <span>{Math.round((userStats.totalSolved / userStats.totalProblems) * 100)}%</span>
-                    </div>
-                    <Progress value={(userStats.totalSolved / userStats.totalProblems) * 100} className="h-2" />
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    {difficultyStats.map((stat) => (
-                      <div key={stat.level} className="p-3 rounded-lg bg-gradient-card">
-                        <div className="text-lg font-semibold">{stat.solved}</div>
-                        <div className="text-xs text-muted-foreground">{stat.level}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {subjectDistribution.map((subject) => (
+                    <div key={subject.subject} className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="font-medium">{subject.subject}</span>
+                        <span className="text-muted-foreground">{subject.solved}/{subject.total}</span>
                       </div>
-                    ))}
-                  </div>
+                      <Progress value={(subject.solved / subject.total) * 100} className="h-2" />
+                      <div className="text-xs text-muted-foreground">
+                        {Math.round((subject.solved / subject.total) * 100)}% completed
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </div>
+          </TabsContent>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Activity Calendar */}
-          <div className="lg:col-span-2">
+          {/* Activity Tab */}
+          <TabsContent value="activity" className="space-y-6">
+            {/* Activity Calendar */}
             <Card className="shadow-medium">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -191,56 +367,6 @@ const Profile = () => {
               </CardContent>
             </Card>
 
-            {/* Subject Progress */}
-            <Card className="mt-8 shadow-medium">
-              <CardHeader>
-                <CardTitle>Subject Progress</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {subjectStats.map((subject) => (
-                    <div key={subject.subject}>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span>{subject.subject}</span>
-                        <span>{subject.solved}/{subject.total}</span>
-                      </div>
-                      <Progress value={subject.progress} className="h-2" />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-8">
-            {/* Achievements */}
-            <Card className="shadow-medium">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="w-5 h-5" />
-                  Achievements
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-3">
-                  {achievements.map((achievement) => (
-                    <div
-                      key={achievement.title}
-                      className={`p-3 rounded-lg border text-center ${
-                        achievement.earned
-                          ? "bg-gradient-primary text-white border-primary"
-                          : "bg-muted/50 text-muted-foreground border-muted"
-                      }`}
-                    >
-                      <achievement.icon className="w-6 h-6 mx-auto mb-2" />
-                      <div className="text-xs font-medium">{achievement.title}</div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Recent Activity */}
             <Card className="shadow-medium">
               <CardHeader>
@@ -258,6 +384,7 @@ const Profile = () => {
                         <Badge variant={activity.difficulty === "easy" ? "easy" : activity.difficulty === "medium" ? "medium" : "hard"} className="text-xs">
                           {activity.difficulty}
                         </Badge>
+                        <div className="text-xs text-muted-foreground">{activity.timeSpent}m</div>
                         {activity.solved ? (
                           <div className="w-2 h-2 rounded-full bg-success"></div>
                         ) : (
@@ -272,8 +399,54 @@ const Profile = () => {
                 </Button>
               </CardContent>
             </Card>
-          </div>
-        </div>
+          </TabsContent>
+
+          {/* Achievements Tab */}
+          <TabsContent value="achievements" className="space-y-6">
+            <Card className="shadow-medium">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="w-5 h-5" />
+                  Achievements
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {achievements.map((achievement) => (
+                    <div
+                      key={achievement.title}
+                      className={`p-4 rounded-lg border text-center transition-all duration-200 ${
+                        achievement.earned
+                          ? "bg-gradient-primary text-white border-primary shadow-medium hover:shadow-strong"
+                          : "bg-muted/50 text-muted-foreground border-muted hover:bg-muted/70"
+                      }`}
+                    >
+                      <achievement.icon className="w-8 h-8 mx-auto mb-3" />
+                      <div className="text-sm font-medium mb-1">{achievement.title}</div>
+                      <div className="text-xs opacity-80">{achievement.description}</div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Progress Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {difficultyStats.map((stat) => (
+                <Card key={stat.level} className="text-center shadow-medium">
+                  <CardHeader>
+                    <CardTitle className="text-lg">{stat.level}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold mb-2">{stat.solved}</div>
+                    <div className="text-sm text-muted-foreground mb-3">out of {stat.total}</div>
+                    <Progress value={(stat.solved / stat.total) * 100} className="h-2" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
