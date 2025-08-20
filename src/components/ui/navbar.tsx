@@ -1,9 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { AuthDialog } from "@/components/auth/AuthDialog";
+import { UserMenu } from "@/components/auth/UserMenu";
 
 const Navbar = () => {
   const location = useLocation();
+  const { user, loading } = useAuth();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -25,6 +29,17 @@ const Navbar = () => {
           >
             Practice
           </Link>
+          {user && (
+            <Link
+              to="/dashboard"
+              className={cn(
+                "text-sm font-medium transition-colors hover:text-primary",
+                isActive("/dashboard") ? "text-primary" : "text-muted-foreground"
+              )}
+            >
+              Dashboard
+            </Link>
+          )}
           <Link
             to="/profile"
             className={cn(
@@ -37,12 +52,24 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center space-x-3">
-          <Button variant="ghost" size="sm">
-            Sign In
-          </Button>
-          <Button variant="hero" size="sm" className="shadow-strong">
-            Start Free Trial
-          </Button>
+          {loading ? (
+            <div className="w-8 h-8 rounded-full bg-muted animate-pulse"></div>
+          ) : user ? (
+            <UserMenu />
+          ) : (
+            <>
+              <AuthDialog defaultMode="login">
+                <Button variant="ghost" size="sm">
+                  Sign In
+                </Button>
+              </AuthDialog>
+              <AuthDialog defaultMode="signup">
+                <Button variant="hero" size="sm" className="shadow-strong">
+                  Start Free Trial
+                </Button>
+              </AuthDialog>
+            </>
+          )}
         </div>
       </div>
     </nav>
