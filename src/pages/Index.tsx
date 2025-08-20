@@ -61,7 +61,7 @@ const Index = () => {
           <div className="text-center animate-fade-in">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
               Master Mechanical Engineering <br />
-              <span className="text-primary-variant">Interview Success</span>
+              <span >Interview Success</span>
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-3xl mx-auto">
               The only platform designed specifically for ME students and new grads. 
