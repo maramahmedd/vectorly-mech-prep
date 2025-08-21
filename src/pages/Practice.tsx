@@ -1,11 +1,13 @@
+// src/pages/Practice.tsx (Updated)
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Navbar from "@/components/ui/navbar";
-import { Search, Filter, Star, Clock, CheckCircle, Target } from "lucide-react";
+import { Search, Filter, Star, Clock, CheckCircle, Target, ArrowRight } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 const Practice = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -135,6 +137,26 @@ const Practice = () => {
               </Card>
             </div>
           </div>
+
+          {/* New Practice Mode Banner */}
+          <Card className="border-primary shadow-strong bg-gradient-primary text-white mb-6">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold mb-1">🚀 New: Interactive Practice Mode</h3>
+                  <p className="text-white/90 text-sm">
+                    Experience real interview conditions with whiteboard, timer, and structured feedback
+                  </p>
+                </div>
+                <Button variant="secondary" size="lg" asChild>
+                  <Link to="/practice/interface">
+                    Try Interactive Mode
+                    <ArrowRight className="ml-2 w-4 h-4" />
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Filters */}
@@ -234,8 +256,10 @@ const Practice = () => {
                     <Button variant="outline" size="sm">
                       <Star className="w-4 h-4" />
                     </Button>
-                    <Button variant={problem.solved ? "success" : "default"}>
-                      {problem.solved ? "Review" : "Solve"}
+                    <Button variant={problem.solved ? "success" : "default"} asChild>
+                      <Link to="/practice/interface">
+                        {problem.solved ? "Review" : "Solve"}
+                      </Link>
                     </Button>
                   </div>
                 </div>

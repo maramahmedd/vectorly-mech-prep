@@ -53,17 +53,11 @@ const Index = () => {
       cta: "Get Started"
     },
     {
-      name: "Pro",
-      price: "$9.99",
-      features: ["Unlimited problems", "Advanced analytics", "Industry-specific filters", "Theory deep-dives"],
+      name: "Premium",
+      price: "$30",
+      features: ["Unlimited problems", "Advanced analytics", "Industry-specific filters", "Theory deep-dives", "1-on-1 mentorship", "Mock interviews", "Company-specific prep"],
       cta: "Start Free Trial",
       popular: true
-    },
-    {
-      name: "Premium",
-      price: "$19.99",
-      features: ["Everything in Pro", "1-on-1 mentorship", "Mock interviews", "Company-specific prep"],
-      cta: "Contact Sales"
     }
   ];
 
@@ -317,7 +311,7 @@ const Index = () => {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {pricingTiers.map((tier, index) => (
               <Card key={index} className={`relative ${tier.popular ? 'border-primary shadow-strong scale-105' : 'shadow-medium'}`}>
                 {tier.popular && (
