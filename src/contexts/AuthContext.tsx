@@ -1,15 +1,7 @@
-// src/contexts/AuthContext.tsx (Enhanced with Admin)
+// src/contexts/AuthContext.tsx - Replace the entire file with this
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import {
-  User as FirebaseUser,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  updateProfile
-} from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { User as SupabaseUser } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 
 interface User {
   id: string;
@@ -17,9 +9,13 @@ interface User {
   email: string;
   university?: string;
   major?: string;
-  graduationYear?: string;
-  createdAt?: Date;
-  isAdmin?: boolean;
+  graduation_year?: string;
+  created_at?: Date;
+  subscription_tier?: 'free' | 'premium';
+  total_problems_solved?: number;
+  current_streak?: number;
+  best_streak?: number;
+  total_study_time_minutes?: number;
 }
 
 interface SignupData {
@@ -57,116 +53,153 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        await loadUserData(firebaseUser);
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        loadUserData(session.user);
       } else {
-        setUser(null);
-        setIsAdmin(false);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return unsubscribe;
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          await loadUserData(session.user);
+        } else {
+          setUser(null);
+          setIsAdmin(false);
+          setLoading(false);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const loadUserData = async (firebaseUser: FirebaseUser) => {
+  const loadUserData = async (authUser: SupabaseUser) => {
     try {
-      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-      
-      // Check admin status
-      const adminDoc = await getDoc(doc(db, 'admins', firebaseUser.uid));
-      const userIsAdmin = adminDoc.exists();
-      setIsAdmin(userIsAdmin);
-      
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authUser.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // Not found error
+        throw error;
+      }
+
+      if (userData) {
         setUser({
-          id: firebaseUser.uid,
-          name: userData.name || firebaseUser.displayName || '',
-          email: firebaseUser.email || '',
+          id: authUser.id,
+          name: userData.name || authUser.user_metadata?.name || '',
+          email: authUser.email || '',
           university: userData.university,
           major: userData.major,
-          graduationYear: userData.graduationYear,
-          createdAt: userData.createdAt?.toDate(),
-          isAdmin: userIsAdmin,
-        });
-
-        // Update last login time
-        await updateDoc(doc(db, 'users', firebaseUser.uid), {
-          lastLoginAt: new Date()
+          graduation_year: userData.graduation_year,
+          created_at: userData.created_at ? new Date(userData.created_at) : undefined,
+          subscription_tier: userData.subscription_tier || 'free',
+          total_problems_solved: userData.total_problems_solved || 0,
+          current_streak: userData.current_streak || 0,
+          best_streak: userData.best_streak || 0,
+          total_study_time_minutes: userData.total_study_time_minutes || 0,
         });
       } else {
-        // If no Firestore doc exists, create one with basic info
-        const basicUser: User = {
-          id: firebaseUser.uid,
-          name: firebaseUser.displayName || '',
-          email: firebaseUser.email || '',
-          isAdmin: userIsAdmin,
+        // Create user profile if it doesn't exist
+        const newUser = {
+          id: authUser.id,
+          name: authUser.user_metadata?.name || '',
+          email: authUser.email || '',
+          subscription_tier: 'free' as const,
+          total_problems_solved: 0,
+          current_streak: 0,
+          best_streak: 0,
+          total_study_time_minutes: 0,
         };
-        
-        await setDoc(doc(db, 'users', firebaseUser.uid), {
-          ...basicUser,
-          createdAt: new Date(),
-          lastLoginAt: new Date(),
-          isActive: true,
-          problemsSolved: 0,
-          totalTimeSpent: 0,
-        });
-        
-        setUser(basicUser);
+
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert(newUser);
+
+        if (insertError) throw insertError;
+
+        setUser(newUser);
       }
+
+      // Update last login
+      await supabase
+        .from('users')
+        .update({ last_login_at: new Date().toISOString() })
+        .eq('id', authUser.id);
+
     } catch (error) {
       console.error('Error loading user data:', error);
+      // Fallback user object
       setUser({
-        id: firebaseUser.uid,
-        name: firebaseUser.displayName || '',
-        email: firebaseUser.email || '',
-        isAdmin: false,
+        id: authUser.id,
+        name: authUser.user_metadata?.name || '',
+        email: authUser.email || '',
+        subscription_tier: 'free',
+        total_problems_solved: 0,
+        current_streak: 0,
+        best_streak: 0,
+        total_study_time_minutes: 0,
       });
+    } finally {
+      setLoading(false);
     }
   };
 
   const signup = async (userData: SignupData) => {
     const { email, password, name, university, major, graduationYear } = userData;
     
-    // Create Firebase Auth user
-    const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
-    
-    // Update the user's display name
-    await updateProfile(firebaseUser, { displayName: name });
-    
-    // Save additional user data to Firestore
-    const userDocData = {
-      name,
+    // Create Supabase Auth user
+    const { data, error } = await supabase.auth.signUp({
       email,
-      university: university || '',
-      major: major || 'Mechanical Engineering',
-      graduationYear: graduationYear || '',
-      createdAt: new Date(),
-      lastLoginAt: new Date(),
-      isActive: true,
-      problemsSolved: 0,
-      totalTimeSpent: 0,
-    };
-    
-    await setDoc(doc(db, 'users', firebaseUser.uid), userDocData);
-    
-    // Set the user state
-    setUser({
-      id: firebaseUser.uid,
-      ...userDocData,
-      isAdmin: false,
+      password,
+      options: {
+        data: {
+          name,
+        }
+      }
     });
+    
+    if (error) throw error;
+
+    // The auth state change listener will handle creating the user profile
+    if (data.user) {
+      // Create user profile in our users table
+      const { error: profileError } = await supabase.from('users').insert({
+        id: data.user.id,
+        name,
+        email,
+        university: university || '',
+        major: major || 'Mechanical Engineering',
+        graduation_year: graduationYear || '',
+        subscription_tier: 'free',
+        total_problems_solved: 0,
+        current_streak: 0,
+        best_streak: 0,
+        total_study_time_minutes: 0,
+      });
+
+      if (profileError) throw profileError;
+    }
   };
 
   const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
     // User state will be updated by the onAuthStateChanged listener
   };
 
   const logout = async () => {
-    await signOut(auth);
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
     setUser(null);
     setIsAdmin(false);
   };
@@ -174,8 +207,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUserProfile = async (userData: Partial<User>) => {
     if (!user) throw new Error('No user logged in');
     
-    // Update Firestore
-    await setDoc(doc(db, 'users', user.id), userData, { merge: true });
+    // Update Supabase
+    const { error } = await supabase
+      .from('users')
+      .update(userData)
+      .eq('id', user.id);
+    
+    if (error) throw error;
     
     // Update local state
     setUser(prev => prev ? { ...prev, ...userData } : null);
