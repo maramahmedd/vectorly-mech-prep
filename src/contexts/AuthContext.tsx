@@ -1,4 +1,4 @@
-// src/contexts/AuthContext.tsx - Replace the entire file with this
+// src/contexts/AuthContext.tsx - Debug version with aggressive timeouts
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -52,45 +52,118 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  // Force loading to false after 10 seconds max
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        loadUserData(session.user);
-      } else {
-        setLoading(false);
+    const timeout = setTimeout(() => {
+      console.log('🚨 FORCE STOPPING LOADING AFTER 10 SECONDS');
+      setLoading(false);
+    }, 10000);
+
+    return () => clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const initAuth = async () => {
+      console.log('🚀 Starting auth initialization...');
+      
+      try {
+        // Add timeout to session fetch
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session timeout')), 5000)
+        );
+
+        const { data: { session }, error } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]) as any;
+        
+        console.log('📡 Session result:', { session: !!session, error });
+
+        if (!mounted) return;
+
+        if (error) {
+          console.error('❌ Session error:', error);
+          setLoading(false);
+          return;
+        }
+
+        if (session?.user) {
+          console.log('👤 User found, loading data...');
+          await loadUserData(session.user);
+        } else {
+          console.log('🔒 No session, setting loading false');
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('💥 Auth init error:', error);
+        if (mounted) setLoading(false);
       }
-    });
+    };
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (session?.user) {
-          await loadUserData(session.user);
-        } else {
-          setUser(null);
-          setIsAdmin(false);
+        console.log('🔄 Auth state change:', event, !!session);
+        
+        if (!mounted) return;
+
+        try {
+          if (session?.user) {
+            console.log('👤 Auth change: loading user data...');
+            await loadUserData(session.user);
+          } else {
+            console.log('🔒 Auth change: no user, clearing state');
+            setUser(null);
+            setIsAdmin(false);
+            setLoading(false);
+          }
+        } catch (error) {
+          console.error('💥 Auth state change error:', error);
           setLoading(false);
         }
       }
     );
 
-    return () => subscription.unsubscribe();
+    initAuth();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const loadUserData = async (authUser: SupabaseUser) => {
+    console.log('📝 Loading user data for:', authUser.id);
+    
     try {
-      const { data: userData, error } = await supabase
+      // Add timeout to user data fetch
+      const userPromise = supabase
         .from('users')
         .select('*')
         .eq('id', authUser.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // Not found error
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('User data timeout')), 5000)
+      );
+
+      const { data: userData, error } = await Promise.race([
+        userPromise,
+        timeoutPromise
+      ]) as any;
+
+      console.log('📊 User data result:', { userData: !!userData, error });
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('❌ User data error:', error);
         throw error;
       }
 
       if (userData) {
+        console.log('✅ Setting user data from database');
         setUser({
           id: authUser.id,
           name: userData.name || authUser.user_metadata?.name || '',
@@ -106,36 +179,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           total_study_time_minutes: userData.total_study_time_minutes || 0,
         });
       } else {
-        // Create user profile if it doesn't exist
-        const newUser = {
+        console.log('⚠️ No user data found, creating fallback');
+        setUser({
           id: authUser.id,
           name: authUser.user_metadata?.name || '',
           email: authUser.email || '',
-          subscription_tier: 'free' as const,
+          university: authUser.user_metadata?.university || '',
+          major: authUser.user_metadata?.major || 'Mechanical Engineering',
+          graduation_year: authUser.user_metadata?.graduation_year || '',
+          subscription_tier: 'free',
           total_problems_solved: 0,
           current_streak: 0,
           best_streak: 0,
           total_study_time_minutes: 0,
-        };
-
-        const { error: insertError } = await supabase
-          .from('users')
-          .insert(newUser);
-
-        if (insertError) throw insertError;
-
-        setUser(newUser);
+        });
       }
 
-      // Update last login
-      await supabase
-        .from('users')
-        .update({ last_login_at: new Date().toISOString() })
-        .eq('id', authUser.id);
-
     } catch (error) {
-      console.error('Error loading user data:', error);
-      // Fallback user object
+      console.error('💥 Load user data error:', error);
+      // Always create fallback user on error
       setUser({
         id: authUser.id,
         name: authUser.user_metadata?.name || '',
@@ -147,6 +209,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         total_study_time_minutes: 0,
       });
     } finally {
+      console.log('🏁 Setting loading to false');
       setLoading(false);
     }
   };
@@ -154,70 +217,79 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signup = async (userData: SignupData) => {
     const { email, password, name, university, major, graduationYear } = userData;
     
-    // Create Supabase Auth user
+    console.log('📝 Starting signup...');
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           name,
+          university: university || '',
+          major: major || 'Mechanical Engineering',
+          graduation_year: graduationYear || '',
         }
       }
     });
     
-    if (error) throw error;
-
-    // The auth state change listener will handle creating the user profile
-    if (data.user) {
-      // Create user profile in our users table
-      const { error: profileError } = await supabase.from('users').insert({
-        id: data.user.id,
-        name,
-        email,
-        university: university || '',
-        major: major || 'Mechanical Engineering',
-        graduation_year: graduationYear || '',
-        subscription_tier: 'free',
-        total_problems_solved: 0,
-        current_streak: 0,
-        best_streak: 0,
-        total_study_time_minutes: 0,
-      });
-
-      if (profileError) throw profileError;
+    if (error) {
+      console.error('❌ Signup error:', error);
+      throw error;
     }
+    
+    console.log('✅ Signup successful');
   };
 
   const login = async (email: string, password: string) => {
+    console.log('🔐 Starting login...');
+    
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    if (error) throw error;
-    // User state will be updated by the onAuthStateChanged listener
+    
+    if (error) {
+      console.error('❌ Login error:', error);
+      throw error;
+    }
+    
+    console.log('✅ Login successful');
   };
 
   const logout = async () => {
+    console.log('🚪 Logging out...');
+    
     const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Logout error:', error);
+      throw error;
+    }
+    
     setUser(null);
     setIsAdmin(false);
+    console.log('✅ Logged out');
   };
 
   const updateUserProfile = async (userData: Partial<User>) => {
     if (!user) throw new Error('No user logged in');
     
-    // Update Supabase
+    console.log('📝 Updating profile...');
+    
     const { error } = await supabase
       .from('users')
       .update(userData)
       .eq('id', user.id);
     
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Profile update error:', error);
+      throw error;
+    }
     
-    // Update local state
     setUser(prev => prev ? { ...prev, ...userData } : null);
+    console.log('✅ Profile updated');
   };
+
+  console.log('🎯 AuthProvider render - loading:', loading, 'user:', !!user);
 
   const value = {
     user,

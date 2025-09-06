@@ -1,4 +1,4 @@
-// src/App.tsx (Updated to use Supabase)
+// src/App.tsx (Updated with Practice Interface route)
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext"; // Now uses Supabase
 import Index from "./pages/Index";
 import Practice from "./pages/Practice";
+import PracticeInterface from "./pages/PracticeInterface";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import SupabaseTestPage from "./pages/SupabaseTest";
@@ -23,6 +24,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/practice" element={<Practice />} />
+            <Route path="/practice/interface" element={<PracticeInterface />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/test" element={<SupabaseTestPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
