@@ -149,7 +149,7 @@ const Practice = () => {
                   </p>
                 </div>
                 <Button variant="secondary" size="lg" asChild>
-                  <Link to="/practice/interface">
+                  <Link to="interface">
                     Try Interactive Mode
                     <ArrowRight className="ml-2 w-4 h-4" />
                   </Link>
@@ -257,7 +257,7 @@ const Practice = () => {
                       <Star className="w-4 h-4" />
                     </Button>
                     <Button variant={problem.solved ? "success" : "default"} asChild>
-                      <Link to="/practice/interface">
+                      <Link to="interface">    {/* link relative to current route bc using HashRouter (vs absolute route) */}
                         {problem.solved ? "Review" : "Solve"}
                       </Link>
                     </Button>

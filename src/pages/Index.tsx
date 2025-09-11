@@ -85,7 +85,7 @@ const Index = () => {
                 className="text-lg hover:bg-green-600 hover:border-green-600 transition-all duration-200" 
                 asChild
               >
-                <Link to="/practice">Start Practicing <ArrowRight className="ml-2" /></Link>
+                <Link to="practice">Start Practicing <ArrowRight className="ml-2" /></Link>
               </Button>
             </div>
             <div className="mt-8 flex items-center justify-center gap-6 text-white/80">
@@ -350,7 +350,7 @@ const Index = () => {
             Join hundreds of mechanical engineering students who've landed their dream roles with Vectorly.
           </p>
           <Button variant="hero" size="lg" className="text-lg" asChild>
-            <Link to="/practice">Start Your Free Trial <ArrowRight className="ml-2" /></Link>
+            <Link to="practice">Start Your Free Trial <ArrowRight className="ml-2" /></Link>
           </Button>
         </div>
       </section>
@@ -364,10 +364,10 @@ const Index = () => {
               <span className="text-xl font-bold">Vectorly</span>
             </div>
             <div className="flex space-x-6 text-sm text-muted-foreground">
-              <Link to="/about" className="hover:text-primary">About</Link>
-              <Link to="/contact" className="hover:text-primary">Contact</Link>
-              <Link to="/privacy" className="hover:text-primary">Privacy</Link>
-              <Link to="/terms" className="hover:text-primary">Terms</Link>
+              <Link to="about" className="hover:text-primary">About</Link>
+              <Link to="contact" className="hover:text-primary">Contact</Link>
+              <Link to="privacy" className="hover:text-primary">Privacy</Link>
+              <Link to="terms" className="hover:text-primary">Terms</Link>
             </div>
           </div>
           <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground">

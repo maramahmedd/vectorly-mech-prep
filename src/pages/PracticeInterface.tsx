@@ -366,7 +366,7 @@ const PracticeInterface = () => {
               <h2 className="text-xl font-semibold mb-2">Sign In Required</h2>
               <p className="text-muted-foreground mb-4">Please sign in to access practice problems</p>
               <Button asChild>
-                <Link to="/dashboard">Go to Dashboard</Link>
+                <Link to="../dashboard">Go to Dashboard</Link>
               </Button>
             </CardContent>
           </Card>
@@ -385,7 +385,7 @@ const PracticeInterface = () => {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/practice">
+                <Link to="practice">
                   <ChevronLeft className="w-4 h-4 mr-1"/>Back to Practice
                 </Link>
               </Button>

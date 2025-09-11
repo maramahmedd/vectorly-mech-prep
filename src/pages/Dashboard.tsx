@@ -390,7 +390,7 @@ const Dashboard = () => {
                 <Target className="w-12 h-12 text-muted-foreground/50 mx-auto mb-2" />
                 <p className="text-muted-foreground">No progress data available yet</p>
                 <Button asChild className="mt-4">
-                  <Link to="/practice">Start Practicing</Link>
+                  <Link to="practice">Start Practicing</Link>
                 </Button>
               </div>
             )}
@@ -424,7 +424,7 @@ const Dashboard = () => {
               <h3 className="font-semibold mb-1">Practice Problems</h3>
               <p className="text-sm text-muted-foreground mb-3">Solve new interview questions</p>
               <Button variant="outline" size="sm" asChild>
-                <Link to="/practice">
+                <Link to="practice">
                   Start Practicing <ArrowRight className="ml-1 w-3 h-3" />
                 </Link>
               </Button>
