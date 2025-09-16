@@ -336,6 +336,147 @@ const Practice = () => {
             </div>
           </CardContent>
         </Card>
+        {/* Free Problems Section */}
+        {freeProblems.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <Target className="w-5 h-5 text-success" />
+              Free Problems ({freeProblems.length})
+            </h2>
+            <div className="space-y-4">
+              {freeProblems.map((problem) => (
+                <Card key={problem.id} className="shadow-medium hover:shadow-strong transition-all duration-200 hover:scale-[1.01]">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          {getSubmissionStatus(problem.id) && (
+                            <CheckCircle className="w-5 h-5 text-success" />
+                          )}
+                          <Badge variant={getDifficultyVariant(problem.difficulty)}>
+                            {problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}
+                          </Badge>
+                          <Badge variant="outline">{problem.subject}</Badge>
+                          <Badge variant="outline">{problem.industry}</Badge>
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Clock className="w-4 h-4" />
+                            {problem.timeEstimate}
+                          </div>
+                        </div>
+                        <CardTitle className="text-lg hover:text-primary cursor-pointer transition-colors">
+                          {problem.title}
+                        </CardTitle>
+                        <p className="text-muted-foreground mt-2">{problem.description}</p>
+                        <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
+                          <Target className="w-4 h-4" />
+                          <span>Asked at: {problem.companies.join(", ")}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <Button variant="outline" size="sm">
+                          <Star className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant={getButtonVariant(problem.id)}
+                          onClick={async () => {
+                            await handleProblemClick(problem.id);
+                            window.location.href = `/practice/interface?problem=${problem.id}`;
+                          }}
+                        >
+                          {getButtonText(problem.id)}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Premium Problems Section */}
+        {premiumProblems.length > 0 && (
+          <div>
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <Lock className="w-5 h-5 text-warning" />
+              Premium Problems ({premiumProblems.length})
+            </h2>
+            <div className="space-y-4">
+              {premiumProblems.map((problem) => (
+                <Card key={problem.id} className={`shadow-medium ${!canAccessPremium ? 'opacity-60' : 'hover:shadow-strong transition-all duration-200 hover:scale-[1.01]'}`}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          {!canAccessPremium && <Lock className="w-4 h-4 text-warning" />}
+                          {canAccessPremium && getSubmissionStatus(problem.id) && (
+                            <CheckCircle className="w-5 h-5 text-success" />
+                          )}
+                          <Badge variant={getDifficultyVariant(problem.difficulty)}>
+                            {problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}
+                          </Badge>
+                          <Badge variant="outline">{problem.subject}</Badge>
+                          <Badge variant="outline">{problem.industry}</Badge>
+                          <Badge variant="warning" className="text-xs">Premium</Badge>
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Clock className="w-4 h-4" />
+                            {problem.timeEstimate}
+                          </div>
+                        </div>
+                        <CardTitle className={`text-lg ${canAccessPremium ? 'hover:text-primary cursor-pointer' : ''} transition-colors`}>
+                          {problem.title}
+                        </CardTitle>
+                        <p className="text-muted-foreground mt-2">{problem.description}</p>
+                        <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
+                          <Target className="w-4 h-4" />
+                          <span>Asked at: {problem.companies.join(", ")}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <Button variant="outline" size="sm" disabled={!canAccessPremium}>
+                          <Star className="w-4 h-4" />
+                        </Button>
+                        {canAccessPremium ? (
+                          <Button 
+                            variant={getButtonVariant(problem.id)}
+                            onClick={async () => {
+                              await handleProblemClick(problem.id);
+                              window.location.href = `/practice/interface?problem=${problem.id}`;
+                            }}
+                          >
+                            {getButtonText(problem.id)}
+                          </Button>
+                        ) : (
+                          <Button variant="outline" disabled>
+                            <Lock className="w-4 h-4 mr-1" />
+                            <Link to="/upgrade">Upgrade</Link>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Upgrade Banner for Free Users */}
+        {!canAccessPremium && premiumProblems.length > 0 && (
+          <Card className="mt-8 border-warning shadow-strong bg-gradient-to-r from-warning/10 to-warning/5">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <h3 className="text-xl font-semibold mb-2">Unlock All Problems</h3>
+                <p className="text-muted-foreground mb-4">
+                  Get access to {premiumProblems.length} premium problems and advanced features
+                </p>
+                <Button variant="hero" size="lg">
+                  Upgrade to Premium - $30/month
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Problems List */}
         <div className="space-y-4">
