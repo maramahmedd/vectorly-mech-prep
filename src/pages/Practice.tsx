@@ -1,88 +1,176 @@
-// src/pages/Practice.tsx (Updated)
+// src/pages/Practice.tsx (Updated with real submissions and freemium)
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Navbar from "@/components/ui/navbar";
-import { Search, Filter, Star, Clock, CheckCircle, Target, ArrowRight } from "lucide-react";
-import { useState } from "react";
+import { Search, Filter, Star, Clock, CheckCircle, Target, ArrowRight, Lock, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { submissionService } from "@/services/submissionService";
+
+interface Problem {
+  id: string;
+  title: string;
+  difficulty: string;
+  subject: string;
+  industry: string;
+  description: string;
+  timeEstimate: string;
+  companies: string[];
+  isPremium: boolean;
+}
+
+interface UserSubmission {
+  id: string;
+  problem_id: string;
+  status: 'attempted' | 'solved' | 'partially_solved' | 'skipped';
+}
 
 const Practice = () => {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [subjectFilter, setSubjectFilter] = useState("all");
   const [industryFilter, setIndustryFilter] = useState("all");
+  const [submissions, setSubmissions] = useState<UserSubmission[]>([]);
+  const [submissionStats, setSubmissionStats] = useState({ total: 0, solved: 0, attempted: 0, totalTime: 0, accuracy: 0 });
+  const [loading, setLoading] = useState(true);
 
-  const problems = [
+  // Mock problems data with freemium model
+  const problems: Problem[] = [
     {
-      id: 1,
+      id: "ve-thermo-001",
       title: "Heat Engine Efficiency Analysis",
       difficulty: "medium",
       subject: "Thermodynamics",
       industry: "Automotive",
       description: "Design a heat engine operating between two thermal reservoirs and calculate efficiency.",
-      solved: true,
       timeEstimate: "30 min",
-      companies: ["Ford", "GM", "Tesla"]
+      companies: ["Ford", "GM", "Tesla"],
+      isPremium: false // Free problem
     },
     {
-      id: 2,
+      id: "ve-solid-002",
       title: "Beam Deflection Under Load",
       difficulty: "easy",
       subject: "Solid Mechanics",
       industry: "Civil",
       description: "Calculate maximum deflection of a simply supported beam under distributed load.",
-      solved: false,
       timeEstimate: "20 min",
-      companies: ["Boeing", "Lockheed Martin"]
+      companies: ["Boeing", "Lockheed Martin"],
+      isPremium: false // Free problem
     },
     {
-      id: 3,
+      id: "ve-fluids-003",
       title: "Turbomachinery Design Challenge",
       difficulty: "hard",
       subject: "Fluid Dynamics",
       industry: "Aerospace",
       description: "Design a centrifugal compressor stage with given pressure ratio and efficiency requirements.",
-      solved: false,
       timeEstimate: "45 min",
-      companies: ["SpaceX", "Blue Origin", "NASA"]
+      companies: ["SpaceX", "Blue Origin", "NASA"],
+      isPremium: true // Premium problem
     },
     {
-      id: 4,
+      id: "ve-materials-004",
       title: "Material Selection for High Temperature",
       difficulty: "medium",
       subject: "Materials Science",
       industry: "Energy",
       description: "Select appropriate materials for gas turbine blades considering temperature and stress.",
-      solved: true,
       timeEstimate: "25 min",
-      companies: ["GE", "Siemens", "Rolls-Royce"]
+      companies: ["GE", "Siemens", "Rolls-Royce"],
+      isPremium: true // Premium problem
     },
     {
-      id: 5,
+      id: "ve-dynamics-005",
       title: "Vibration Analysis of Rotating Shaft",
       difficulty: "hard",
       subject: "Dynamics",
       industry: "Manufacturing",
       description: "Analyze critical speeds and vibration modes of a rotating shaft system.",
-      solved: false,
       timeEstimate: "40 min",
-      companies: ["Caterpillar", "John Deere", "3M"]
+      companies: ["Caterpillar", "John Deere", "3M"],
+      isPremium: true // Premium problem
     },
     {
-      id: 6,
+      id: "ve-heat-006",
       title: "Heat Transfer in Electronics Cooling",
       difficulty: "easy",
       subject: "Heat Transfer",
       industry: "Electronics",
       description: "Design cooling system for electronic components using natural convection.",
-      solved: false,
       timeEstimate: "25 min",
-      companies: ["Apple", "Intel", "NVIDIA"]
+      companies: ["Apple", "Intel", "NVIDIA"],
+      isPremium: false // Free problem
+    },
+    // Add more problems with mix of free/premium
+    {
+      id: "ve-statics-007",
+      title: "Truss Force Analysis",
+      difficulty: "easy",
+      subject: "Statics",
+      industry: "Civil",
+      description: "Determine forces in truss members using method of joints.",
+      timeEstimate: "20 min",
+      companies: ["Bechtel", "AECOM"],
+      isPremium: false // Free problem
+    },
+    {
+      id: "ve-advanced-008",
+      title: "Advanced Computational Fluid Analysis",
+      difficulty: "hard",
+      subject: "Advanced CFD",
+      industry: "Aerospace",
+      description: "Complex turbulence modeling for hypersonic vehicle design.",
+      timeEstimate: "60 min",
+      companies: ["NASA", "Boeing", "Lockheed Martin"],
+      isPremium: true // Premium problem
     }
   ];
+
+  useEffect(() => {
+    if (user) {
+      loadUserData();
+    }
+  }, [user]);
+
+  const loadUserData = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      
+      // Load user submissions
+      const userSubmissions = await submissionService.getUserSubmissions(user.id);
+      setSubmissions(userSubmissions);
+      
+      // Load submission stats
+      const stats = await submissionService.getSubmissionStats(user.id);
+      setSubmissionStats(stats);
+      
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProblemClick = async (problemId: string) => {
+    if (!user) return;
+    
+    try {
+      // Mark as attempted when clicked
+      await submissionService.markAsAttempted(problemId);
+      // Reload data to update UI
+      await loadUserData();
+    } catch (error) {
+      console.error('Error marking problem as attempted:', error);
+    }
+  };
 
   const getDifficultyVariant = (difficulty: string) => {
     switch (difficulty) {
@@ -91,6 +179,27 @@ const Practice = () => {
       case "hard": return "hard";
       default: return "default";
     }
+  };
+
+  const getSubmissionStatus = (problemId: string) => {
+    const submission = submissions.find(s => s.problem_id === problemId);
+    return submission?.status || null;
+  };
+
+  const getButtonText = (problemId: string) => {
+    const status = getSubmissionStatus(problemId);
+    switch (status) {
+      case 'solved': return 'Review';
+      case 'partially_solved': return 'Continue';
+      case 'attempted': return 'Continue';
+      case 'skipped': return 'Retry';
+      default: return 'Solve';
+    }
+  };
+
+  const getButtonVariant = (problemId: string) => {
+    const status = getSubmissionStatus(problemId);
+    return status === 'solved' ? 'success' : 'default';
   };
 
   const filteredProblems = problems.filter(problem => {
@@ -103,11 +212,9 @@ const Practice = () => {
     return matchesSearch && matchesDifficulty && matchesSubject && matchesIndustry;
   });
 
-  const stats = {
-    totalSolved: problems.filter(p => p.solved).length,
-    totalProblems: problems.length,
-    currentStreak: 7
-  };
+  const freeProblems = filteredProblems.filter(p => !p.isPremium);
+  const premiumProblems = filteredProblems.filter(p => p.isPremium);
+  const canAccessPremium = user?.subscription_tier === 'premium';
 
   return (
     <div className="min-h-screen bg-gradient-card">
@@ -124,26 +231,32 @@ const Practice = () => {
             
             <div className="flex gap-4">
               <Card className="text-center p-4">
-                <div className="text-2xl font-bold text-primary">{stats.totalSolved}</div>
+                <div className="text-2xl font-bold text-primary">
+                  {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : submissionStats.solved}
+                </div>
                 <div className="text-sm text-muted-foreground">Solved</div>
               </Card>
               <Card className="text-center p-4">
-                <div className="text-2xl font-bold text-accent">{stats.currentStreak}</div>
-                <div className="text-sm text-muted-foreground">Day Streak</div>
+                <div className="text-2xl font-bold text-accent">
+                  {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : Math.round(submissionStats.totalTime / 60)}
+                </div>
+                <div className="text-sm text-muted-foreground">Hours</div>
               </Card>
               <Card className="text-center p-4">
-                <div className="text-2xl font-bold text-warning">{stats.totalProblems}</div>
-                <div className="text-sm text-muted-foreground">Total</div>
+                <div className="text-2xl font-bold text-warning">
+                  {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : `${submissionStats.accuracy}%`}
+                </div>
+                <div className="text-sm text-muted-foreground">Accuracy</div>
               </Card>
             </div>
           </div>
 
-          {/* New Practice Mode Banner */}
+          {/* Interactive Practice Mode Banner */}
           <Card className="border-primary shadow-strong bg-gradient-primary text-white mb-6">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold mb-1">🚀 New: Interactive Practice Mode</h3>
+                  <h3 className="text-lg font-semibold mb-1">🚀 Interactive Practice Mode</h3>
                   <p className="text-white/90 text-sm">
                     Experience real interview conditions with whiteboard, timer, and structured feedback
                   </p>
@@ -224,49 +337,147 @@ const Practice = () => {
           </CardContent>
         </Card>
 
-        {/* Problems List */}
-        <div className="space-y-4">
-          {filteredProblems.map((problem) => (
-            <Card key={problem.id} className="shadow-medium hover:shadow-strong transition-all duration-200 hover:scale-[1.01]">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      {problem.solved && <CheckCircle className="w-5 h-5 text-success" />}
-                      <Badge variant={getDifficultyVariant(problem.difficulty)}>
-                        {problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}
-                      </Badge>
-                      <Badge variant="outline">{problem.subject}</Badge>
-                      <Badge variant="outline">{problem.industry}</Badge>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Clock className="w-4 h-4" />
-                        {problem.timeEstimate}
+        {/* Free Problems Section */}
+        {freeProblems.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <Target className="w-5 h-5 text-success" />
+              Free Problems ({freeProblems.length})
+            </h2>
+            <div className="space-y-4">
+              {freeProblems.map((problem) => (
+                <Card key={problem.id} className="shadow-medium hover:shadow-strong transition-all duration-200 hover:scale-[1.01]">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          {getSubmissionStatus(problem.id) && (
+                            <CheckCircle className="w-5 h-5 text-success" />
+                          )}
+                          <Badge variant={getDifficultyVariant(problem.difficulty)}>
+                            {problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}
+                          </Badge>
+                          <Badge variant="outline">{problem.subject}</Badge>
+                          <Badge variant="outline">{problem.industry}</Badge>
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Clock className="w-4 h-4" />
+                            {problem.timeEstimate}
+                          </div>
+                        </div>
+                        <CardTitle className="text-lg hover:text-primary cursor-pointer transition-colors">
+                          {problem.title}
+                        </CardTitle>
+                        <p className="text-muted-foreground mt-2">{problem.description}</p>
+                        <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
+                          <Target className="w-4 h-4" />
+                          <span>Asked at: {problem.companies.join(", ")}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <Button variant="outline" size="sm">
+                          <Star className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant={getButtonVariant(problem.id)}
+                          onClick={async () => {
+                            await handleProblemClick(problem.id);
+                            window.location.href = `/practice/interface?problem=${problem.id}`;
+                          }}
+                        >
+                          {getButtonText(problem.id)}
+                        </Button>
                       </div>
                     </div>
-                    <CardTitle className="text-lg hover:text-primary cursor-pointer transition-colors">
-                      {problem.title}
-                    </CardTitle>
-                    <p className="text-muted-foreground mt-2">{problem.description}</p>
-                    <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
-                      <Target className="w-4 h-4" />
-                      <span>Asked at: {problem.companies.join(", ")}</span>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Premium Problems Section */}
+        {premiumProblems.length > 0 && (
+          <div>
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <Lock className="w-5 h-5 text-warning" />
+              Premium Problems ({premiumProblems.length})
+            </h2>
+            <div className="space-y-4">
+              {premiumProblems.map((problem) => (
+                <Card key={problem.id} className={`shadow-medium ${!canAccessPremium ? 'opacity-60' : 'hover:shadow-strong transition-all duration-200 hover:scale-[1.01]'}`}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          {!canAccessPremium && <Lock className="w-4 h-4 text-warning" />}
+                          {canAccessPremium && getSubmissionStatus(problem.id) && (
+                            <CheckCircle className="w-5 h-5 text-success" />
+                          )}
+                          <Badge variant={getDifficultyVariant(problem.difficulty)}>
+                            {problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}
+                          </Badge>
+                          <Badge variant="outline">{problem.subject}</Badge>
+                          <Badge variant="outline">{problem.industry}</Badge>
+                          <Badge variant="warning" className="text-xs">Premium</Badge>
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Clock className="w-4 h-4" />
+                            {problem.timeEstimate}
+                          </div>
+                        </div>
+                        <CardTitle className={`text-lg ${canAccessPremium ? 'hover:text-primary cursor-pointer' : ''} transition-colors`}>
+                          {problem.title}
+                        </CardTitle>
+                        <p className="text-muted-foreground mt-2">{problem.description}</p>
+                        <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
+                          <Target className="w-4 h-4" />
+                          <span>Asked at: {problem.companies.join(", ")}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <Button variant="outline" size="sm" disabled={!canAccessPremium}>
+                          <Star className="w-4 h-4" />
+                        </Button>
+                        {canAccessPremium ? (
+                          <Button 
+                            variant={getButtonVariant(problem.id)}
+                            onClick={async () => {
+                              await handleProblemClick(problem.id);
+                              window.location.href = `/practice/interface?problem=${problem.id}`;
+                            }}
+                          >
+                            {getButtonText(problem.id)}
+                          </Button>
+                        ) : (
+                          <Button variant="outline" disabled>
+                            <Lock className="w-4 h-4 mr-1" />
+                            <Link to="/upgrade">Upgrade</Link>
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    <Button variant="outline" size="sm">
-                      <Star className="w-4 h-4" />
-                    </Button>
-                    <Button variant={problem.solved ? "success" : "default"} asChild>
-                      <Link to="/practice/interface">
-                        {problem.solved ? "Review" : "Solve"}
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Upgrade Banner for Free Users */}
+        {!canAccessPremium && premiumProblems.length > 0 && (
+          <Card className="mt-8 border-warning shadow-strong bg-gradient-to-r from-warning/10 to-warning/5">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <h3 className="text-xl font-semibold mb-2">Unlock All Problems</h3>
+                <p className="text-muted-foreground mb-4">
+                  Get access to {premiumProblems.length} premium problems and advanced features
+                </p>
+                <Button variant="hero" size="lg">
+                  Upgrade to Premium - $30/month
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {filteredProblems.length === 0 && (
           <Card className="text-center py-12">

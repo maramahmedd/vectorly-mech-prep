@@ -1,4 +1,4 @@
-// src/pages/PracticeInterface.tsx
+// src/pages/PracticeInterface.tsx (Updated with all fixes)
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,14 +11,16 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import Navbar from "@/components/ui/navbar";
 import { useAuth } from "@/contexts/AuthContext";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { submissionService } from "@/services/submissionService";
+import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { 
   AlarmClock, BookText, Calculator, Check, ChevronRight, ChevronLeft, ClipboardCopy, Clock, FileQuestion,
   Flag, HelpCircle, Highlighter, Info, Lightbulb, Loader2, Mic, MicOff, NotebookPen, Play, 
   Save, Settings, Sparkles, Square, StopCircle, TimerReset, Trash2, Upload, Home, Star,
-  Target, TrendingUp
+  Target, TrendingUp, ChevronDown, Lock
 } from "lucide-react";
 
 // Countdown timer hook
@@ -147,11 +149,7 @@ const VECTORLY_QUESTIONS = [
       "Consider friction, heat losses, and material limitations in real engines", 
       "Think about automotive-specific constraints like weight, cost, and emissions"
     ],
-    rubric: [
-      "Correctly calculates Carnot efficiency: η = 1 - T_cold/T_hot",
-      "Identifies real-world limitations (friction, heat transfer, materials)",
-      "Proposes realistic improvements for automotive applications"
-    ]
+    isPremium: false
   },
   {
     id: "ve-solid-002", 
@@ -168,11 +166,7 @@ const VECTORLY_QUESTIONS = [
       "Calculate moment of inertia: I = bh³/12 for rectangular section",
       "Consider material properties, geometry changes, and weight implications"
     ],
-    rubric: [
-      "Correctly applies beam deflection and stress formulas",
-      "Shows proper unit conversion and calculation",
-      "Proposes viable design changes with trade-off analysis"
-    ]
+    isPremium: false
   },
   {
     id: "ve-fluids-003",
@@ -189,11 +183,7 @@ const VECTORLY_QUESTIONS = [
       "Consider tip-speed ratio and blade angle optimization",
       "Think about real-world constraints: noise regulations, maintenance access, electrical integration"
     ],
-    rubric: [
-      "Applies fluid mechanics principles correctly (Betz limit, power equations)",
-      "Considers geometric optimization and aerodynamic factors", 
-      "Addresses practical implementation challenges"
-    ]
+    isPremium: true
   },
   {
     id: "ve-materials-004",
@@ -210,32 +200,7 @@ const VECTORLY_QUESTIONS = [
       "Evaluate stainless steels, superalloys, and ceramic options",
       "Factor in material cost, availability, and manufacturing processes"
     ],
-    rubric: [
-      "Identifies relevant material properties for the application",
-      "Compares multiple material options systematically", 
-      "Considers manufacturing and economic factors"
-    ]
-  },
-  {
-    id: "ve-behavioral-005",
-    type: "Behavioral",
-    subject: "Problem Solving",
-    industry: "General",
-    difficulty: "Medium",
-    title: "Design Failure Analysis",
-    prompt: "Describe a time when you discovered a critical design flaw late in the development process. How did you identify the issue, what was your approach to solving it, and how did you prevent similar issues in the future?",
-    timeLimit: 15,
-    companies: ["Apple", "Tesla", "Boeing"],
-    hints: [
-      "Use the STAR method: Situation, Task, Action, Result",
-      "Focus on your analytical process and decision-making",
-      "Highlight lessons learned and process improvements"
-    ],
-    rubric: [
-      "Provides clear context and demonstrates technical problem-solving",
-      "Shows systematic approach to root cause analysis",
-      "Demonstrates learning and process improvement"
-    ]
+    isPremium: true
   }
 ];
 
@@ -334,25 +299,144 @@ function QuickCalculator() {
   );
 }
 
+// Quick Reference Component (Now Collapsible)
+function QuickReference() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <Card className="shadow-medium">
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <CollapsibleTrigger asChild>
+          <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+            <CardTitle className="text-sm flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BookText className="w-4 h-4" />
+                Quick Reference
+              </div>
+              <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </CardTitle>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent>
+            <div className="space-y-3 text-xs">
+              <div>
+                <h4 className="font-medium mb-1">Common Formulas:</h4>
+                <ul className="space-y-1 text-muted-foreground font-mono">
+                  <li>• σ = F/A (stress)</li>
+                  <li>• δ = FL/(AE) (elongation)</li>
+                  <li>• I = bh³/12 (rect. moment)</li>
+                  <li>• P = ½ρAv³Cp (wind power)</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-medium mb-1">SI Units:</h4>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li>• Force: N (Newton)</li>
+                  <li>• Pressure: Pa (Pascal)</li>
+                  <li>• Energy: J (Joule)</li>
+                  <li>• Power: W (Watt)</li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
+  );
+}
+
 // Main Practice Interface Component
 const PracticeInterface = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const params = useParams();
+  const [searchParams] = useSearchParams();
   
   const [currentIndex, setCurrentIndex] = useState(0);
   const [notes, setNotes] = useState("");
   const [flagged, setFlagged] = useState(false);
-  const [showSolution, setShowSolution] = useState(false);
+  const [hintsUsed, setHintsUsed] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [solutionDialogOpen, setSolutionDialogOpen] = useState(false);
   
   const { display, running, setRunning, secondsLeft, setSecondsLeft } = useCountdown(45);
   
-  const currentQuestion = VECTORLY_QUESTIONS[currentIndex];
+  // Get problem from URL params or use first problem
+  const problemId = searchParams.get('problem');
+  const currentQuestion = VECTORLY_QUESTIONS.find(q => q.id === problemId) || VECTORLY_QUESTIONS[0];
   const progress = ((currentIndex + 1) / VECTORLY_QUESTIONS.length) * 100;
+
+  // Load existing submission data
+  useEffect(() => {
+    if (user && currentQuestion) {
+      loadSubmissionData();
+    }
+  }, [user, currentQuestion]);
+
+  const loadSubmissionData = async () => {
+    if (!user || !currentQuestion) return;
+    
+    try {
+      const submission = await submissionService.getUserSubmissionForProblem(user.id, currentQuestion.id);
+      if (submission) {
+        setNotes(submission.notes || "");
+        setHintsUsed(submission.hints_used || 0);
+      }
+    } catch (error) {
+      console.error('Error loading submission data:', error);
+    }
+  };
+
+  // Auto-save notes
+  useEffect(() => {
+    const saveNotes = async () => {
+      if (!user || !currentQuestion || !notes.trim()) return;
+      
+      try {
+        await submissionService.submitAnswer({
+          problem_id: currentQuestion.id,
+          status: 'attempted',
+          user_answer: notes,
+          time_spent_minutes: Math.round((currentQuestion.timeLimit * 60 - secondsLeft) / 60),
+          hints_used: hintsUsed,
+          notes: notes
+        });
+      } catch (error) {
+        console.error('Error auto-saving notes:', error);
+      }
+    };
+
+    const timeoutId = setTimeout(saveNotes, 2000); // Auto-save after 2 seconds of inactivity
+    return () => clearTimeout(timeoutId);
+  }, [notes, user, currentQuestion, secondsLeft, hintsUsed]);
 
   const nextQuestion = () => setCurrentIndex(prev => Math.min(VECTORLY_QUESTIONS.length - 1, prev + 1));
   const prevQuestion = () => setCurrentIndex(prev => Math.max(0, prev - 1));
   const resetTimer = () => setSecondsLeft(currentQuestion.timeLimit * 60);
+
+  const handleSubmitSolution = async (status: 'solved' | 'partially_solved' | 'skipped') => {
+    if (!user || !currentQuestion) return;
+    
+    try {
+      setLoading(true);
+      
+      await submissionService.submitAnswer({
+        problem_id: currentQuestion.id,
+        status: status,
+        user_answer: notes,
+        time_spent_minutes: Math.round((currentQuestion.timeLimit * 60 - secondsLeft) / 60),
+        hints_used: hintsUsed,
+        notes: notes
+      });
+      
+      // Navigate back to practice page
+      navigate('/practice');
+    } catch (error) {
+      console.error('Error submitting solution:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Redirect if not authenticated
   if (!user) {
@@ -367,6 +451,27 @@ const PracticeInterface = () => {
               <p className="text-muted-foreground mb-4">Please sign in to access practice problems</p>
               <Button asChild>
                 <Link to="/dashboard">Go to Dashboard</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Check premium access
+  if (currentQuestion.isPremium && user.subscription_tier !== 'premium') {
+    return (
+      <div className="min-h-screen bg-gradient-card">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+          <Card className="w-full max-w-md mx-4">
+            <CardContent className="pt-6 text-center">
+              <Lock className="w-12 h-12 text-warning mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2">Premium Problem</h2>
+              <p className="text-muted-foreground mb-4">This problem requires a premium subscription</p>
+              <Button asChild variant="hero">
+                <Link to="/practice">Back to Practice</Link>
               </Button>
             </CardContent>
           </Card>
@@ -396,6 +501,7 @@ const PracticeInterface = () => {
               <Badge variant={currentQuestion.difficulty === "Easy" ? "easy" : currentQuestion.difficulty === "Medium" ? "medium" : "hard"}>
                 {currentQuestion.difficulty}
               </Badge>
+              {currentQuestion.isPremium && <Badge variant="warning">Premium</Badge>}
             </div>
             
             <div className="flex items-center gap-4">
@@ -470,6 +576,7 @@ const PracticeInterface = () => {
                   <CardTitle className="text-sm flex items-center gap-2">
                     <NotebookPen className="w-4 h-4" />
                     Your Solution Notes
+                    <Badge variant="outline" className="text-xs">Auto-saved</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -489,39 +596,45 @@ const PracticeInterface = () => {
                       Copy Notes
                     </Button>
                     <span className="text-xs text-muted-foreground">
-                      Interviewers appreciate clear, structured thinking
+                      Notes are automatically saved as you type
                     </span>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Navigation */}
+              {/* Action Buttons */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Button 
-                    variant="outline" 
-                    onClick={prevQuestion} 
-                    disabled={currentIndex === 0}
+                    onClick={() => handleSubmitSolution('skipped')}
+                    variant="outline"
+                    disabled={loading}
                   >
-                    <ChevronLeft className="w-4 h-4 mr-1" />
-                    Previous
+                    Skip Problem
                   </Button>
                   <Button 
-                    onClick={nextQuestion} 
-                    disabled={currentIndex === VECTORLY_QUESTIONS.length - 1}
+                    onClick={() => handleSubmitSolution('partially_solved')}
+                    variant="secondary"
+                    disabled={loading}
                   >
-                    Next
-                    <ChevronRight className="w-4 h-4 ml-1" />
+                    Save Progress
+                  </Button>
+                  <Button 
+                    onClick={() => handleSubmitSolution('solved')}
+                    disabled={loading}
+                  >
+                    {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    Mark as Solved
                   </Button>
                 </div>
 
-                <div className="w-64">
-                  <div className="flex justify-between text-sm text-muted-foreground mb-1">
-                    <span>Question {currentIndex + 1} of {VECTORLY_QUESTIONS.length}</span>
-                    <span>{Math.round(progress)}%</span>
-                  </div>
-                  <Progress value={progress} className="h-2" />
-                </div>
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate('/practice')}
+                >
+                  <Square className="w-4 h-4 mr-2" />
+                  End Session
+                </Button>
               </div>
             </div>
 
@@ -563,108 +676,42 @@ const PracticeInterface = () => {
                 </CardContent>
               </Card>
 
-              {/* Evaluation Rubric */}
-              <Card className="shadow-medium">
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Target className="w-4 h-4" />
-                    Evaluation Criteria
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    {currentQuestion.rubric.map((criterion, index) => (
-                      <li key={index} className="flex items-start gap-2 text-sm">
-                        <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">
+              {/* Quick Reference (Now Collapsible) */}
+              <QuickReference />
+
+              {/* Solution Dialog */}
+              <Dialog open={solutionDialogOpen} onOpenChange={setSolutionDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full">
+                    <HelpCircle className="w-4 h-4 mr-2" />
+                    View Solution Approach
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Solution Approach</DialogTitle>
+                    <DialogDescription>
+                      One possible way to tackle this problem systematically
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-3">
+                    {currentQuestion.hints.map((hint, index) => (
+                      <div key={index} className="flex gap-3">
+                        <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium flex-shrink-0">
                           {index + 1}
                         </span>
-                        <span>{criterion}</span>
-                      </li>
+                        <p className="text-sm">{hint}</p>
+                      </div>
                     ))}
-                  </ul>
-                </CardContent>
-              </Card>
-
-              {/* Quick Reference */}
-              <Card className="shadow-medium">
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <BookText className="w-4 h-4" />
-                    Quick Reference
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3 text-xs">
-                    <div>
-                      <h4 className="font-medium mb-1">Common Formulas:</h4>
-                      <ul className="space-y-1 text-muted-foreground font-mono">
-                        <li>• σ = F/A (stress)</li>
-                        <li>• δ = FL/(AE) (elongation)</li>
-                        <li>• I = bh³/12 (rect. moment)</li>
-                        <li>• P = ½ρAv³Cp (wind power)</li>
-                      </ul>
-                    </div>
-                    <div>
-                      <h4 className="font-medium mb-1">SI Units:</h4>
-                      <ul className="space-y-1 text-muted-foreground">
-                        <li>• Force: N (Newton)</li>
-                        <li>• Pressure: Pa (Pascal)</li>
-                        <li>• Energy: J (Joule)</li>
-                        <li>• Power: W (Watt)</li>
-                      </ul>
-                    </div>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Actions */}
-              <div className="space-y-3">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="w-full">
-                      <HelpCircle className="w-4 h-4 mr-2" />
-                      View Solution Approach
+                  <DialogFooter>
+                    <Button onClick={() => setSolutionDialogOpen(false)}>
+                      <Check className="w-4 h-4 mr-2" />
+                      Got it
                     </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>Solution Approach</DialogTitle>
-                      <DialogDescription>
-                        One possible way to tackle this problem systematically
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3">
-                      {currentQuestion.rubric.map((step, index) => (
-                        <div key={index} className="flex gap-3">
-                          <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium flex-shrink-0">
-                            {index + 1}
-                          </span>
-                          <p className="text-sm">{step}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <DialogFooter>
-                      <Button>
-                        <Check className="w-4 h-4 mr-2" />
-                        Got it
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-
-                <Button variant="secondary" className="w-full">
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Progress
-                </Button>
-
-                <Button 
-                  className="w-full" 
-                  onClick={() => navigate('/practice')}
-                >
-                  <Square className="w-4 h-4 mr-2" />
-                  End Session
-                </Button>
-              </div>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </div>
