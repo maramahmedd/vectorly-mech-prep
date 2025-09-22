@@ -353,11 +353,14 @@ const PracticeInterface = () => {
   const [searchParams] = useSearchParams();
   
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [notes, setNotes] = useState("");
   const [flagged, setFlagged] = useState(false);
   const [hintsUsed, setHintsUsed] = useState(0);
   const [loading, setLoading] = useState(false);
   const [solutionDialogOpen, setSolutionDialogOpen] = useState(false);
+
+  const [notes, setNotes] = useState("");
+  const [notesLoaded, setNotesLoaded] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   
   const { display, running, setRunning, secondsLeft, setSecondsLeft } = useCountdown(45);
   
@@ -377,38 +380,59 @@ const PracticeInterface = () => {
     if (!user || !currentQuestion) return;
     
     try {
+      console.log('Loading submission data for problem:', currentQuestion.id);
       const submission = await submissionService.getUserSubmissionForProblem(user.id, currentQuestion.id);
       if (submission) {
+        console.log('Found existing submission:', submission);
         setNotes(submission.notes || "");
         setHintsUsed(submission.hints_used || 0);
+        // Update timer if there's previous time spent
+        if (submission.time_spent_minutes > 0) {
+          const remainingTime = Math.max(0, currentQuestion.timeLimit * 60 - submission.time_spent_minutes * 60);
+          setSecondsLeft(remainingTime);
+        }
       }
+      setNotesLoaded(true);
     } catch (error) {
       console.error('Error loading submission data:', error);
+      setNotesLoaded(true);
     }
   };
 
   // Auto-save notes
-  useEffect(() => {
-    const saveNotes = async () => {
-      if (!user || !currentQuestion || !notes.trim()) return;
-      
-      try {
-        await submissionService.submitAnswer({
-          problem_id: currentQuestion.id,
-          status: 'attempted',
-          user_answer: notes,
-          time_spent_minutes: Math.round((currentQuestion.timeLimit * 60 - secondsLeft) / 60),
-          hints_used: hintsUsed,
-          notes: notes
-        });
-      } catch (error) {
-        console.error('Error auto-saving notes:', error);
-      }
-    };
+  // Update the auto-save notes effect:
+useEffect(() => {
+  // Don't auto-save until notes are loaded and there's actual content
+  if (!notesLoaded || !user || !currentQuestion || !notes.trim()) {
+    return;
+  }
 
-    const timeoutId = setTimeout(saveNotes, 2000); // Auto-save after 2 seconds of inactivity
-    return () => clearTimeout(timeoutId);
-  }, [notes, user, currentQuestion, secondsLeft, hintsUsed]);
+  const saveNotes = async () => {
+    try {
+      setSaveStatus('saving');
+      console.log('Auto-saving notes for problem:', currentQuestion.id);
+      
+      await submissionService.submitAnswer({
+        problem_id: currentQuestion.id,
+        status: 'attempted',
+        user_answer: notes,
+        time_spent_minutes: Math.max(1, Math.round((currentQuestion.timeLimit * 60 - secondsLeft) / 60)),
+        hints_used: hintsUsed,
+        notes: notes
+      });
+      
+      setSaveStatus('saved');
+      console.log('Notes auto-saved successfully');
+    } catch (error) {
+      console.error('Error auto-saving notes:', error);
+      setSaveStatus('unsaved');
+    }
+  };
+
+  setSaveStatus('unsaved');
+  const timeoutId = setTimeout(saveNotes, 2000); // Auto-save after 2 seconds of inactivity
+  return () => clearTimeout(timeoutId);
+}, [notes, user, currentQuestion, hintsUsed, notesLoaded]); 
 
   const nextQuestion = () => setCurrentIndex(prev => Math.min(VECTORLY_QUESTIONS.length - 1, prev + 1));
   const prevQuestion = () => setCurrentIndex(prev => Math.max(0, prev - 1));
@@ -570,33 +594,45 @@ const PracticeInterface = () => {
                 </CardContent>
               </Card>
 
+              
+
+              {/* Notes Section */}
               {/* Notes Section */}
               <Card className="shadow-medium">
                 <CardHeader>
                   <CardTitle className="text-sm flex items-center gap-2">
                     <NotebookPen className="w-4 h-4" />
                     Your Solution Notes
-                    <Badge variant="outline" className="text-xs">Auto-saved</Badge>
+                    <Badge 
+                      variant={saveStatus === 'saved' ? 'success' : saveStatus === 'saving' ? 'outline' : 'destructive'} 
+                      className="text-xs"
+                    >
+                      {saveStatus === 'saved' ? 'Saved' : saveStatus === 'saving' ? 'Saving...' : 'Unsaved'}
+                    </Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Textarea
                     className="min-h-[150px] resize-none"
-                    placeholder="Walk through your solution step by step. State assumptions, show calculations, and explain your reasoning..."
+                    placeholder={notesLoaded ? "Walk through your solution step by step. State assumptions, show calculations, and explain your reasoning..." : "Loading notes..."}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
+                    disabled={!notesLoaded}
                   />
                   <div className="flex items-center gap-2 mt-3">
                     <Button 
                       size="sm" 
                       variant="outline" 
                       onClick={() => navigator.clipboard?.writeText(notes)}
+                      disabled={!notes.trim()}
                     >
                       <ClipboardCopy className="w-4 h-4 mr-1" />
                       Copy Notes
                     </Button>
                     <span className="text-xs text-muted-foreground">
-                      Notes are automatically saved as you type
+                      {saveStatus === 'saved' && 'Notes saved automatically'}
+                      {saveStatus === 'saving' && 'Saving notes...'}
+                      {saveStatus === 'unsaved' && 'Changes will be saved automatically'}
                     </span>
                   </div>
                 </CardContent>

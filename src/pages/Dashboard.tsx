@@ -1,5 +1,5 @@
-// src/pages/Dashboard.tsx - Complete updated version
-import React from "react";
+// src/pages/Dashboard.tsx - Complete updated version (with broadcast listener)
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,9 +27,33 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AuthDialog } from '@/components/auth/AuthDialog';
 import { Link } from 'react-router-dom';
 import { useDashboardStats, useWeeklyProgress, useSubjectProgress } from '@/hooks/useDashboardData';
+import { supabase } from "@/lib/supabase"; // ⬅️ broadcast listener uses this
 
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
+
+  // 🔁 When a broadcast arrives, we bump this key to remount data sections that fetch on mount
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // Listen for "attempts_changed" broadcasts from submissionService
+  useEffect(() => {
+    if (!user) return;
+
+    const ch = supabase
+      .channel("ui-updates", { config: { broadcast: { self: false } } })
+      .on("broadcast", { event: "attempts_changed" }, (msg) => {
+        if (msg?.payload?.userId === user.id) {
+          setReloadKey((k) => k + 1);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [user?.id]);
+
+  // NOTE: hooks read data; by keying sections below, they refetch on remount after broadcast
   const { stats, loading: statsLoading } = useDashboardStats();
   const { weeklyData, loading: weeklyLoading } = useWeeklyProgress();
   const { subjectData, loading: subjectLoading } = useSubjectProgress();
@@ -95,7 +119,7 @@ const Dashboard = () => {
     );
   }
 
-  // Custom tooltip for cleaner pie chart
+  // Custom tooltip for pie chart
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -112,16 +136,19 @@ const Dashboard = () => {
     return null;
   };
 
-  // Custom label function for pie chart
-  const renderLabel = (entry: any) => {
-    return entry.value > 0 ? `${entry.value}%` : '';
-  };
+  const renderLabel = (entry: any) => (entry.value > 0 ? `${entry.value}%` : "");
 
-  // KPI Component
-  function Kpi({ label, value, sub, icon: Icon, trend, loading }: { 
-    label: string; 
-    value: string; 
-    sub?: string; 
+  function Kpi({
+    label,
+    value,
+    sub,
+    icon: Icon,
+    trend,
+    loading,
+  }: {
+    label: string;
+    value: string;
+    sub?: string;
     icon: any;
     trend?: "up" | "down" | "neutral";
     loading?: boolean;
@@ -141,10 +168,16 @@ const Dashboard = () => {
             <>
               <div className="text-3xl font-semibold">{value}</div>
               {sub && (
-                <div className={`text-xs flex items-center gap-1 ${
-                  trend === 'up' ? 'text-success' : trend === 'down' ? 'text-destructive' : 'text-muted-foreground'
-                }`}>
-                  {trend === 'up' && <TrendingUp className="w-3 h-3" />}
+                <div
+                  className={`text-xs flex items-center gap-1 ${
+                    trend === "up"
+                      ? "text-success"
+                      : trend === "down"
+                      ? "text-destructive"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {trend === "up" && <TrendingUp className="w-3 h-3" />}
                   {sub}
                 </div>
               )}
@@ -155,7 +188,7 @@ const Dashboard = () => {
     );
   }
 
-  // Mock industry data (since we don't have this data yet)
+  // Mock industry data (still placeholder)
   const industryPrep = [
     { industry: "Automotive", problems: 0, hours: 0 },
     { industry: "Aerospace", problems: 0, hours: 0 },
@@ -164,7 +197,8 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-card">
+    // ⬇️ Keyed container — remounts on broadcast to refetch via hooks on mount
+    <div className="min-h-screen bg-gradient-card" key={reloadKey}>
       <Navbar />
       
       <div className="container mx-auto px-4 py-8 space-y-6">
@@ -174,9 +208,11 @@ const Dashboard = () => {
             <h1 className="text-3xl font-bold">Welcome back, {user.name}!</h1>
             <p className="text-muted-foreground">
               {user.university && user.major ? (
-                <>{user.major} • {user.university} • Class of {user.graduation_year}</>
+                <>
+                  {user.major} • {user.university} • Class of {user.graduation_year}
+                </>
               ) : (
-                'Ready to ace your mechanical engineering interviews?'
+                "Ready to ace your mechanical engineering interviews?"
               )}
             </p>
           </div>
@@ -296,7 +332,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* CLEAN PIE CHART */}
+          {/* Subject Focus Pie */}
           <Card className="shadow-medium">
             <CardHeader>
               <CardTitle>Subject Focus</CardTitle>
@@ -326,14 +362,10 @@ const Dashboard = () => {
                       <Tooltip content={<CustomTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
-                  {/* Clean Legend */}
                   <div className="grid grid-cols-2 gap-1 text-xs">
                     {subjectData.filter(item => item.value > 0).map((item) => (
                       <div key={item.name} className="flex items-center gap-2">
-                        <div 
-                          className="w-2 h-2 rounded-full flex-shrink-0" 
-                          style={{ backgroundColor: item.color }}
-                        />
+                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
                         <span className="truncate">{item.name}</span>
                       </div>
                     ))}
@@ -397,7 +429,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Industry Preparation */}
+        {/* Industry Preparation (placeholder) */}
         <Card className="shadow-medium">
           <CardHeader>
             <CardTitle>Industry Preparation</CardTitle>
@@ -454,7 +486,7 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Achievement Highlights - Show empty state for now */}
+        {/* Achievement Highlights - empty state */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="shadow-medium border-l-4 border-l-muted">
             <CardContent className="pt-6">

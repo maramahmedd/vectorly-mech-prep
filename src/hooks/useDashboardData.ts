@@ -1,4 +1,4 @@
-// src/hooks/useDashboardData.ts
+// src/hooks/useDashboardData.ts (Fixed version)
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -56,54 +56,64 @@ export const useDashboardStats = () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('Fetching dashboard stats for user:', user.id);
 
-      // Get user's basic stats
+      // Get user's basic stats from the users table
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('total_problems_solved, current_streak, best_streak, total_study_time_minutes')
         .eq('id', user.id)
         .single();
 
-      if (userError) throw userError;
+      if (userError) {
+        console.log('User data error (this is normal for new users):', userError);
+        // For new users, we'll create default stats
+      }
 
-      // Get submission stats for accuracy calculation
+      // Get all submissions for this user
       const { data: submissions, error: submissionError } = await supabase
         .from('submissions')
-        .select('status, time_spent_minutes')
+        .select('status, time_spent_minutes, created_at')
         .eq('user_id', user.id);
 
-      if (submissionError) throw submissionError;
+      if (submissionError) {
+        console.error('Submissions error:', submissionError);
+        throw submissionError;
+      }
 
-      // Calculate stats
+      console.log('Loaded submissions:', submissions);
+
+      // Calculate stats from submissions
       const totalAttempts = submissions?.length || 0;
       const totalSolved = submissions?.filter(s => s.status === 'solved').length || 0;
       const accuracy = totalAttempts > 0 ? Math.round((totalSolved / totalAttempts) * 100) : 0;
-      const totalMinutes = userData?.total_study_time_minutes || 0;
+      const totalMinutes = submissions?.reduce((sum, s) => sum + (s.time_spent_minutes || 0), 0) || 0;
       const averageTime = totalSolved > 0 ? Math.round(totalMinutes / totalSolved) : 0;
 
-      // Get weekly progress
+      // Get weekly progress (last 7 days)
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-      const { data: weeklyActivity, error: weeklyError } = await supabase
-        .from('user_daily_activity')
-        .select('problems_solved')
-        .eq('user_id', user.id)
-        .gte('activity_date', oneWeekAgo.toISOString().split('T')[0]);
+      const weeklySubmissions = submissions?.filter(s => {
+        const submissionDate = new Date(s.created_at);
+        return submissionDate >= oneWeekAgo && s.status === 'solved';
+      }) || [];
 
-      if (weeklyError) throw weeklyError;
+      const weeklyProgress = weeklySubmissions.length;
 
-      const weeklyProgress = weeklyActivity?.reduce((sum, day) => sum + (day.problems_solved || 0), 0) || 0;
-
-      setStats({
-        totalSolved: userData?.total_problems_solved || 0,
+      // Use submission data as the source of truth, fallback to user table data
+      const finalStats: DashboardStats = {
+        totalSolved: totalSolved,
         currentStreak: userData?.current_streak || 0,
         averageTime,
         accuracy,
-        totalHours: Math.round(totalMinutes / 60 * 10) / 10, // Convert to hours with 1 decimal
-        weeklyGoal: 50, // This could be fetched from user_goals table
+        totalHours: Math.round(totalMinutes / 60 * 10) / 10,
+        weeklyGoal: 50, // This could be user-configurable
         weeklyProgress
-      });
+      };
+
+      console.log('Calculated stats:', finalStats);
+      setStats(finalStats);
 
     } catch (err: any) {
       console.error('Error fetching dashboard stats:', err);
@@ -135,39 +145,53 @@ export const useWeeklyProgress = () => {
 
     try {
       setLoading(true);
+      console.log('Fetching weekly progress for user:', user.id);
 
-      // Get last 7 days
+      // Get last 7 days of submissions
       const dates = Array.from({ length: 7 }, (_, i) => {
         const date = new Date();
         date.setDate(date.getDate() - (6 - i));
         return date;
       });
 
-      const { data: activities, error } = await supabase
-        .from('user_daily_activity')
-        .select('activity_date, problems_attempted, problems_solved')
-        .eq('user_id', user.id)
-        .gte('activity_date', dates[0].toISOString().split('T')[0])
-        .lte('activity_date', dates[6].toISOString().split('T')[0]);
+      const startDate = dates[0];
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = dates[6];
+      endDate.setHours(23, 59, 59, 999);
 
-      if (error) throw error;
+      const { data: submissions, error } = await supabase
+        .from('submissions')
+        .select('created_at, status')
+        .eq('user_id', user.id)
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+
+      if (error) {
+        console.error('Weekly submissions error:', error);
+        throw error;
+      }
+
+      console.log('Weekly submissions:', submissions);
 
       // Map data to chart format
       const chartData = dates.map(date => {
         const dateStr = date.toISOString().split('T')[0];
-        const dayData = activities?.find(a => a.activity_date === dateStr);
+        const daySubmissions = submissions?.filter(s => 
+          s.created_at.startsWith(dateStr)
+        ) || [];
         
         return {
           day: date.toLocaleDateString('en-US', { weekday: 'short' }),
-          attempted: dayData?.problems_attempted || 0,
-          solved: dayData?.problems_solved || 0
+          attempted: daySubmissions.length,
+          solved: daySubmissions.filter(s => s.status === 'solved').length
         };
       });
 
+      console.log('Weekly chart data:', chartData);
       setWeeklyData(chartData);
     } catch (error) {
       console.error('Error fetching weekly progress:', error);
-      // Set empty data on error
+      // Set empty data on error but with proper structure
       const emptyData = Array.from({ length: 7 }, (_, i) => {
         const date = new Date();
         date.setDate(date.getDate() - (6 - i));
@@ -205,55 +229,78 @@ export const useSubjectProgress = () => {
 
     try {
       setLoading(true);
+      console.log('Fetching subject progress for user:', user.id);
 
-      // First, get all topics
-      const { data: topics, error: topicsError } = await supabase
-        .from('topics')
-        .select('id, name')
-        .eq('is_active', true);
-
-      if (topicsError) throw topicsError;
-
-      // Get user progress by topic
-      const { data: progress, error: progressError } = await supabase
-        .from('user_progress')
-        .select('topic_id, problems_attempted, problems_solved, total_time_spent_minutes')
+      // Get all submissions with subject mapping
+      const { data: submissions, error: submissionError } = await supabase
+        .from('submissions')
+        .select('problem_id, status, time_spent_minutes')
         .eq('user_id', user.id);
 
-      if (progressError) throw progressError;
+      if (submissionError) {
+        console.error('Subject submissions error:', submissionError);
+        throw submissionError;
+      }
 
-      const colors = ["#DC2626", "#EA580C", "#D97706", "#CA8A04", "#65A30D", "#16A34A"];
+      console.log('Subject submissions:', submissions);
 
-      // If no progress data, show topics with zero progress
-      if (!progress || progress.length === 0) {
-        const emptyData = topics?.slice(0, 6).map((topic, index) => ({
-          name: topic.name,
+      // Mock mapping of problem IDs to subjects (since we don't have a problems table yet)
+      const problemSubjectMap: Record<string, string> = {
+        've-thermo-001': 'Thermodynamics',
+        've-solid-002': 'Solid Mechanics',
+        've-fluids-003': 'Fluid Dynamics',
+        've-materials-004': 'Materials Science',
+        've-dynamics-005': 'Dynamics',
+        've-heat-006': 'Heat Transfer',
+        've-statics-007': 'Statics',
+        've-advanced-008': 'Advanced CFD'
+      };
+
+      // Group submissions by subject
+      const subjectStats: Record<string, { attempted: number; solved: number; time: number }> = {};
+      
+      submissions?.forEach(submission => {
+        const subject = problemSubjectMap[submission.problem_id] || 'Other';
+        if (!subjectStats[subject]) {
+          subjectStats[subject] = { attempted: 0, solved: 0, time: 0 };
+        }
+        subjectStats[subject].attempted++;
+        if (submission.status === 'solved') {
+          subjectStats[subject].solved++;
+        }
+        subjectStats[subject].time += submission.time_spent_minutes || 0;
+      });
+
+      const colors = ["#DC2626", "#EA580C", "#D97706", "#CA8A04", "#65A30D", "#16A34A", "#059669", "#0891B2"];
+
+      // Calculate total time for percentage
+      const totalTime = Object.values(subjectStats).reduce((sum, stats) => sum + stats.time, 0);
+
+      const chartData = Object.entries(subjectStats).map(([subject, stats], index) => ({
+        name: subject,
+        value: totalTime > 0 ? Math.round((stats.time / totalTime) * 100) : 0,
+        color: colors[index] || "#6B7280",
+        solved: stats.solved,
+        total: stats.attempted
+      }));
+
+      // If no data, show default subjects
+      if (chartData.length === 0) {
+        const defaultSubjects = ['Thermodynamics', 'Solid Mechanics', 'Fluid Dynamics', 'Materials Science'];
+        const emptyData = defaultSubjects.map((subject, index) => ({
+          name: subject,
           value: 0,
           color: colors[index] || "#6B7280",
           solved: 0,
           total: 0
-        })) || [];
-
+        }));
         setSubjectData(emptyData);
-        setLoading(false);
-        return;
+      } else {
+        setSubjectData(chartData);
       }
 
-      // Create a map of topic names for easy lookup
-      const topicMap = new Map(topics.map(topic => [topic.id, topic.name]));
-
-      // Calculate total time for percentage
-      const totalTime = progress.reduce((sum, p) => sum + (p.total_time_spent_minutes || 0), 0);
-
-      const chartData = progress.map((item, index) => ({
-        name: topicMap.get(item.topic_id) || 'Unknown Topic',
-        value: totalTime > 0 ? Math.round((item.total_time_spent_minutes || 0) / totalTime * 100) : 0,
-        color: colors[index] || "#6B7280",
-        solved: item.problems_solved || 0,
-        total: item.problems_attempted || 0
-      }));
-
-      setSubjectData(chartData);
+      console.log('Subject chart data:', chartData);
+      
     } catch (error) {
       console.error('Error fetching subject progress:', error);
       setSubjectData([]);

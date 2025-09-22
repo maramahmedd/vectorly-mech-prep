@@ -1,11 +1,10 @@
-// src/App.tsx (Updated with Practice Interface route)
+// src/App.tsx (Fixed routing)
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-// import { BrowserRouter, Routes, Route } from "react-router-dom"; COMMENTED OUT BC GH PAGES SERVES STATIC FILES
 import { HashRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext"; // Now uses Supabase
+import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Practice from "./pages/Practice";
 import PracticeInterface from "./pages/PracticeInterface";
@@ -25,11 +24,11 @@ const App = () => (
         <HashRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="practice" element={<Practice />} />
-            <Route path="practice/interface" element={<PracticeInterface />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="test" element={<SupabaseTestPage />} />
-            <Route path="/test" element={<Upgrade />} />
+            <Route path="/practice" element={<Practice />} />
+            <Route path="/practice/interface" element={<PracticeInterface />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/upgrade" element={<Upgrade />} />
+            <Route path="/test" element={<SupabaseTestPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </HashRouter>
@@ -39,15 +38,3 @@ const App = () => (
 );
 
 export default App;
-
-//<BrowserRouter>
-//<Routes>
-  //<Route path="/" element={<Index />} />
-  //<Route path="/practice" element={<Practice />} />
-  //<Route path="/practice/interface" element={<PracticeInterface />} />
-  //<Route path="/dashboard" element={<Dashboard />} />
-  //<Route path="/test" element={<SupabaseTestPage />} />
-  //{/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-  //<Route path="*" element={<NotFound />} />
-//</Routes>
-//</BrowserRouter>
