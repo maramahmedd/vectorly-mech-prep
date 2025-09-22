@@ -10,19 +10,8 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { submissionService } from "@/services/submissionService";
-import { supabase } from "@/lib/supabase"; // ← adjust path if your client lives elsewhere
-
-interface Problem {
-  id: string;
-  title: string;
-  difficulty: string;
-  subject: string;
-  industry: string;
-  description: string;
-  timeEstimate: string;
-  companies: string[];
-  isPremium: boolean;
-}
+import { supabase } from "@/lib/supabase";
+import { listProblems, type Problem as DbProblem } from "@/services/problemService";
 
 interface UserSubmission {
   id: string;
@@ -34,10 +23,14 @@ const Practice = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [subjectFilter, setSubjectFilter] = useState("all");
   const [industryFilter, setIndustryFilter] = useState("all");
+
+  // Data
+  const [problems, setProblems] = useState<DbProblem[]>([]);
   const [submissions, setSubmissions] = useState<UserSubmission[]>([]);
   const [submissionStats, setSubmissionStats] = useState({
     total: 0,
@@ -46,108 +39,73 @@ const Practice = () => {
     totalTime: 0,
     accuracy: 0,
   });
-  const [loading, setLoading] = useState(true);
-  const [processingProblem, setProcessingProblem] = useState<string | null>(null);
 
-  // Mock problems data
-  const problems: Problem[] = [
-    {
-      id: "ve-thermo-001",
-      title: "Heat Engine Efficiency Analysis",
-      difficulty: "medium",
-      subject: "Thermodynamics",
-      industry: "Automotive",
-      description:
-        "Design a heat engine operating between two thermal reservoirs and calculate efficiency.",
-      timeEstimate: "30 min",
-      companies: ["Ford", "GM", "Tesla"],
-      isPremium: false,
-    },
-    {
-      id: "ve-solid-002",
-      title: "Beam Deflection Under Load",
-      difficulty: "easy",
-      subject: "Solid Mechanics",
-      industry: "Civil",
-      description:
-        "Calculate maximum deflection of a simply supported beam under distributed load.",
-      timeEstimate: "20 min",
-      companies: ["Boeing", "Lockheed Martin"],
-      isPremium: false,
-    },
-    {
-      id: "ve-fluids-003",
-      title: "Turbomachinery Design Challenge",
-      difficulty: "hard",
-      subject: "Fluid Dynamics",
-      industry: "Aerospace",
-      description:
-        "Design a centrifugal compressor stage with given pressure ratio and efficiency requirements.",
-      timeEstimate: "45 min",
-      companies: ["SpaceX", "Blue Origin", "NASA"],
-      isPremium: true,
-    },
-    {
-      id: "ve-materials-004",
-      title: "Material Selection for High Temperature",
-      difficulty: "medium",
-      subject: "Materials Science",
-      industry: "Energy",
-      description:
-        "Select appropriate materials for gas turbine blades considering temperature and stress.",
-      timeEstimate: "25 min",
-      companies: ["GE", "Siemens", "Rolls-Royce"],
-      isPremium: true,
-    },
-    {
-      id: "ve-dynamics-005",
-      title: "Vibration Analysis of Rotating Shaft",
-      difficulty: "hard",
-      subject: "Dynamics",
-      industry: "Manufacturing",
-      description:
-        "Analyze critical speeds and vibration modes of a rotating shaft system.",
-      timeEstimate: "40 min",
-      companies: ["Caterpillar", "John Deere", "3M"],
-      isPremium: true,
-    },
-    {
-      id: "ve-heat-006",
-      title: "Heat Transfer in Electronics Cooling",
-      difficulty: "easy",
-      subject: "Heat Transfer",
-      industry: "Electronics",
-      description:
-        "Design cooling system for electronic components using natural convection.",
-      timeEstimate: "25 min",
-      companies: ["Apple", "Intel", "NVIDIA"],
-      isPremium: false,
-    },
-    {
-      id: "ve-statics-007",
-      title: "Truss Force Analysis",
-      difficulty: "easy",
-      subject: "Statics",
-      industry: "Civil",
-      description:
-        "Determine forces in truss members using method of joints.",
-      timeEstimate: "20 min",
-      companies: ["Bechtel", "AECOM"],
-      isPremium: false,
-    },
-    {
-      id: "ve-advanced-008",
-      title: "Advanced Computational Fluid Analysis",
-      difficulty: "hard",
-      subject: "Advanced CFD",
-      industry: "Aerospace",
-      description:
-        "Complex turbulence modeling for hypersonic vehicle design.",
-      timeEstimate: "60 min",
-      companies: ["NASA", "Boeing", "Lockheed Martin"],
-      isPremium: true,
-    },
-  ];
+  const [loading, setLoading] = useState(true);
+
+  // Fetch problems from Supabase when filters change
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await listProblems({
+          search: searchTerm,
+          difficulty: difficultyFilter,
+          subject: subjectFilter,
+          industry: industryFilter,
+        });
+        if (!cancelled) setProblems(rows);
+      } catch (e) {
+        console.error("Failed to load problems:", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchTerm, difficultyFilter, subjectFilter, industryFilter]);
+
+  // Initial load of submissions/stats
+  useEffect(() => {
+    if (user) {
+      loadUserData();
+    } else {
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Load user submissions + stats
+  const loadUserData = async () => {
+    if (!user) return;
+    try {
+      setLoading(true);
+      const userSubmissions = await submissionService.getUserSubmissions(user.id);
+      setSubmissions(userSubmissions);
+
+      const stats = await submissionService.getSubmissionStats(user.id);
+      setSubmissionStats(stats);
+    } catch (error) {
+      console.error("Error loading user data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🔔 Broadcast listener so Practice list updates instantly
+  useEffect(() => {
+    if (!user) return;
+    const ch = supabase
+      .channel("ui-updates", { config: { broadcast: { self: false } } })
+      .on("broadcast", { event: "attempts_changed" }, (msg) => {
+        if (msg?.payload?.userId === user.id) {
+          loadUserData();
+        }
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // Helpers
   const getDifficultyVariant = (difficulty: string) => {
@@ -174,7 +132,6 @@ const Practice = () => {
       case "solved":
         return "Review";
       case "partially_solved":
-        return "Continue";
       case "attempted":
         return "Continue";
       case "skipped":
@@ -189,95 +146,19 @@ const Practice = () => {
     return status === "solved" ? "success" : "default";
   };
 
-  // Initial load
-  useEffect(() => {
-    if (user) {
-      loadUserData();
-    } else {
-      setLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
-  // Fetch submissions + stats
-  const loadUserData = async () => {
-    if (!user) return;
-
-    try {
-      setLoading(true);
-      const userSubmissions = await submissionService.getUserSubmissions(user.id);
-      setSubmissions(userSubmissions);
-
-      const stats = await submissionService.getSubmissionStats(user.id);
-      setSubmissionStats(stats);
-    } catch (error) {
-      console.error("Error loading user data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 🔔 Broadcast listener (placed AFTER loadUserData so we can call it)
-  useEffect(() => {
-    if (!user) return;
-
-    const ch = supabase
-      .channel("ui-updates", { config: { broadcast: { self: false } } })
-      .on("broadcast", { event: "attempts_changed" }, (msg) => {
-        if (msg?.payload?.userId === user.id) {
-          loadUserData(); // refresh list & stats when any attempt/solve happens
-        }
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(ch);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
-
-  // Click → navigate + mark attempted (optimistic background)
+  // Click → navigate + mark attempted (optimistic)
   const handleProblemClick = (problemId: string) => {
-    if (!user) {
-      console.log("No user logged in");
-      return;
-    }
-
+    if (!user) return;
     navigate(`/practice/interface?problem=${problemId}`);
-
     submissionService
       .markAsAttempted(problemId)
-      .then(() => {
-        // local refresh in case broadcast is slow/offline
-        loadUserData();
-      })
-      .catch((error) => {
-        console.error("Background marking failed:", error);
-      });
+      .then(() => loadUserData())
+      .catch((err) => console.error("Background marking failed:", err));
   };
 
-  // Filters
-  const filteredProblems = problems.filter((problem) => {
-    const matchesSearch =
-      problem.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      problem.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDifficulty =
-      difficultyFilter === "all" || problem.difficulty === difficultyFilter;
-    const matchesSubject =
-      subjectFilter === "all" || problem.subject === subjectFilter;
-    const matchesIndustry =
-      industryFilter === "all" || problem.industry === industryFilter;
-
-    return (
-      matchesSearch &&
-      matchesDifficulty &&
-      matchesSubject &&
-      matchesIndustry
-    );
-  });
-
-  const freeProblems = filteredProblems.filter((p) => !p.isPremium);
-  const premiumProblems = filteredProblems.filter((p) => p.isPremium);
+  // Split lists
+  const freeProblems = problems.filter((p) => !p.is_premium);
+  const premiumProblems = problems.filter((p) => p.is_premium);
   const canAccessPremium = (user as any)?.subscription_tier === "premium";
 
   return (
@@ -285,7 +166,7 @@ const Practice = () => {
       <Navbar />
 
       <div className="container mx-auto px-4 py-8">
-        {/* Debug Test Button - Remove this after testing */}
+        {/* Debug */}
         <Card className="mb-4 bg-yellow-50 border-yellow-200">
           <CardContent className="pt-4">
             <h3 className="font-semibold mb-2">🧪 Debug Test</h3>
@@ -301,6 +182,7 @@ const Practice = () => {
                 onClick={() => {
                   console.log("🧪 Current user:", user);
                   console.log("🧪 Current submissions:", submissions);
+                  console.log("🧪 Problems (from DB):", problems);
                 }}
               >
                 Log Debug Info
@@ -358,12 +240,9 @@ const Practice = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold mb-1">
-                    🚀 Interactive Practice Mode
-                  </h3>
+                  <h3 className="text-lg font-semibold mb-1">🚀 Interactive Practice Mode</h3>
                   <p className="text-white/90 text-sm">
-                    Experience real interview conditions with whiteboard, timer,
-                    and structured feedback
+                    Experience real interview conditions with whiteboard, timer, and structured feedback
                   </p>
                 </div>
                 <Button variant="secondary" size="lg" asChild>
@@ -463,22 +342,19 @@ const Practice = () => {
                             <CheckCircle className="w-5 h-5 text-success" />
                           )}
                           <Badge variant={getDifficultyVariant(problem.difficulty)}>
-                            {problem.difficulty.charAt(0).toUpperCase() +
-                              problem.difficulty.slice(1)}
+                            {problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}
                           </Badge>
                           <Badge variant="outline">{problem.subject}</Badge>
                           <Badge variant="outline">{problem.industry}</Badge>
                           <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             <Clock className="w-4 h-4" />
-                            {problem.timeEstimate}
+                            {problem.time_estimate}
                           </div>
                         </div>
                         <CardTitle className="text-lg hover:text-primary cursor-pointer transition-colors">
                           {problem.title}
                         </CardTitle>
-                        <p className="text-muted-foreground mt-2">
-                          {problem.description}
-                        </p>
+                        <p className="text-muted-foreground mt-2">{problem.description}</p>
                         <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
                           <Target className="w-4 h-4" />
                           <span>Asked at: {problem.companies.join(", ")}</span>
@@ -524,15 +400,12 @@ const Practice = () => {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          {!canAccessPremium && (
-                            <Lock className="w-4 h-4 text-warning" />
-                          )}
+                          {!canAccessPremium && <Lock className="w-4 h-4 text-warning" />}
                           {canAccessPremium && getSubmissionStatus(problem.id) && (
                             <CheckCircle className="w-5 h-5 text-success" />
                           )}
                           <Badge variant={getDifficultyVariant(problem.difficulty)}>
-                            {problem.difficulty.charAt(0).toUpperCase() +
-                              problem.difficulty.slice(1)}
+                            {problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}
                           </Badge>
                           <Badge variant="outline">{problem.subject}</Badge>
                           <Badge variant="outline">{problem.industry}</Badge>
@@ -541,7 +414,7 @@ const Practice = () => {
                           </Badge>
                           <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             <Clock className="w-4 h-4" />
-                            {problem.timeEstimate}
+                            {problem.time_estimate}
                           </div>
                         </div>
                         <CardTitle
@@ -551,9 +424,7 @@ const Practice = () => {
                         >
                           {problem.title}
                         </CardTitle>
-                        <p className="text-muted-foreground mt-2">
-                          {problem.description}
-                        </p>
+                        <p className="text-muted-foreground mt-2">{problem.description}</p>
                         <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
                           <Target className="w-4 h-4" />
                           <span>Asked at: {problem.companies.join(", ")}</span>
@@ -594,8 +465,7 @@ const Practice = () => {
               <div className="text-center">
                 <h3 className="text-xl font-semibold mb-2">Unlock All Problems</h3>
                 <p className="text-muted-foreground mb-4">
-                  Get access to {premiumProblems.length} premium problems and advanced
-                  features
+                  Get access to {premiumProblems.length} premium problems and advanced features
                 </p>
                 <Button variant="hero" size="lg" asChild>
                   <Link to="/upgrade">Upgrade to Premium - $30/month</Link>
@@ -605,7 +475,7 @@ const Practice = () => {
           </Card>
         )}
 
-        {filteredProblems.length === 0 && (
+        {problems.length === 0 && (
           <Card className="text-center py-12">
             <CardContent>
               <div className="text-muted-foreground">
