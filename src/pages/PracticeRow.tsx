@@ -7,7 +7,7 @@ type Problem = {
   id: string; // uuid
   title: string;
   slug: string;
-  difficulty: "Easy" | "Medium" | "Hard";
+  difficulty: "easy" | "medium" | "hard";
 };
 
 type Props = {
@@ -45,6 +45,7 @@ export default function PracticeRow({ problem, userId }: Props) {
     const prev = status;
     setStatus("attempted");
     setSaving(true);
+    
 
     // upsert so we don’t duplicate; PK is (user_id, problem_id)
     const { error } = await supabase

@@ -11,7 +11,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { submissionService } from "@/services/submissionService";
 import { supabase } from "@/lib/supabase";
-import { listProblems, type Problem as DbProblem } from "@/services/problemService";
+import { listProblems, type DbProblem } from "@/services/problemService";
 
 interface UserSubmission {
   id: string;

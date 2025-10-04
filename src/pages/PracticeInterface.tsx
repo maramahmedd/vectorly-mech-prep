@@ -15,6 +15,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import Navbar from "@/components/ui/navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { submissionService } from "@/services/submissionService";
+import { getProblemById, type DbProblem } from "@/services/problemService";
 import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { 
   AlarmClock, BookText, Calculator, Check, ChevronRight, ChevronLeft, ClipboardCopy, Clock, FileQuestion,
@@ -351,7 +352,7 @@ const PracticeInterface = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flagged, setFlagged] = useState(false);
   const [hintsUsed, setHintsUsed] = useState(0);
@@ -361,13 +362,46 @@ const PracticeInterface = () => {
   const [notes, setNotes] = useState("");
   const [notesLoaded, setNotesLoaded] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
-  
+
+  // Dynamic problem loading from Supabase
+  const [currentQuestion, setCurrentQuestion] = useState<DbProblem | null>(null);
+  const [problemLoading, setProblemLoading] = useState(true);
+
   const { display, running, setRunning, secondsLeft, setSecondsLeft } = useCountdown(45);
-  
-  // Get problem from URL params or use first problem
+
+  // Get problem ID from URL params
   const problemId = searchParams.get('problem');
-  const currentQuestion = VECTORLY_QUESTIONS.find(q => q.id === problemId) || VECTORLY_QUESTIONS[0];
-  const progress = ((currentIndex + 1) / VECTORLY_QUESTIONS.length) * 100;
+  const progress = 0; // Can be updated if you want to track multiple problems
+
+  // Fetch problem from Supabase when problemId changes
+  useEffect(() => {
+    const loadProblem = async () => {
+      if (!problemId) {
+        setProblemLoading(false);
+        return;
+      }
+
+      try {
+        setProblemLoading(true);
+        const problem = await getProblemById(problemId);
+        if (problem) {
+          setCurrentQuestion(problem);
+          // Set timer based on problem's time limit
+          if (problem.time_limit_minutes) {
+            setSecondsLeft(problem.time_limit_minutes * 60);
+          }
+        } else {
+          console.error('Problem not found:', problemId);
+        }
+      } catch (error) {
+        console.error('Error loading problem:', error);
+      } finally {
+        setProblemLoading(false);
+      }
+    };
+
+    loadProblem();
+  }, [problemId]);
 
   // Load existing submission data
   useEffect(() => {
@@ -387,8 +421,8 @@ const PracticeInterface = () => {
         setNotes(submission.notes || "");
         setHintsUsed(submission.hints_used || 0);
         // Update timer if there's previous time spent
-        if (submission.time_spent_minutes > 0) {
-          const remainingTime = Math.max(0, currentQuestion.timeLimit * 60 - submission.time_spent_minutes * 60);
+        if (submission.time_spent_minutes > 0 && currentQuestion.time_limit_minutes) {
+          const remainingTime = Math.max(0, currentQuestion.time_limit_minutes * 60 - submission.time_spent_minutes * 60);
           setSecondsLeft(remainingTime);
         }
       }
@@ -416,7 +450,7 @@ useEffect(() => {
         problem_id: currentQuestion.id,
         status: 'attempted',
         user_answer: notes,
-        time_spent_minutes: Math.max(1, Math.round((currentQuestion.timeLimit * 60 - secondsLeft) / 60)),
+        time_spent_minutes: Math.max(1, Math.round(((currentQuestion.time_limit_minutes || 30) * 60 - secondsLeft) / 60)),
         hints_used: hintsUsed,
         notes: notes
       });
@@ -434,9 +468,9 @@ useEffect(() => {
   return () => clearTimeout(timeoutId);
 }, [notes, user, currentQuestion, hintsUsed, notesLoaded]); 
 
-  const nextQuestion = () => setCurrentIndex(prev => Math.min(VECTORLY_QUESTIONS.length - 1, prev + 1));
+  const nextQuestion = () => setCurrentIndex(prev => prev + 1);
   const prevQuestion = () => setCurrentIndex(prev => Math.max(0, prev - 1));
-  const resetTimer = () => setSecondsLeft(currentQuestion.timeLimit * 60);
+  const resetTimer = () => setSecondsLeft((currentQuestion?.time_limit_minutes || 30) * 60);
 
   const handleSubmitSolution = async (status: 'solved' | 'partially_solved' | 'skipped') => {
     if (!user || !currentQuestion) return;
@@ -483,8 +517,49 @@ useEffect(() => {
     );
   }
 
+  // Loading state
+  if (problemLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-card">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+          <Card className="w-full max-w-md">
+            <CardContent className="pt-6 text-center">
+              <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-primary" />
+              <h2 className="text-xl font-semibold mb-2">Loading Problem...</h2>
+              <p className="text-muted-foreground">Please wait while we fetch the problem details.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Problem not found
+  if (!currentQuestion) {
+    return (
+      <div className="min-h-screen bg-gradient-card">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+          <Card className="w-full max-w-md">
+            <CardContent className="pt-6 text-center">
+              <FileQuestion className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+              <h2 className="text-xl font-semibold mb-2">Problem Not Found</h2>
+              <p className="text-muted-foreground mb-4">
+                The problem you're looking for doesn't exist or has been removed.
+              </p>
+              <Button asChild>
+                <Link to="/practice">Back to Practice</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   // Check premium access
-  if (currentQuestion.isPremium && user.subscription_tier !== 'premium') {
+  if (currentQuestion.is_premium && (user as any)?.subscription_tier !== 'premium') {
     return (
       <div className="min-h-screen bg-gradient-card">
         <Navbar />
@@ -519,13 +594,12 @@ useEffect(() => {
                 </Link>
               </Button>
               <div className="h-6 w-px bg-border" />
-              <Badge variant="outline">{currentQuestion.type}</Badge>
               <Badge variant="outline">{currentQuestion.subject}</Badge>
               <Badge variant="outline">{currentQuestion.industry}</Badge>
-              <Badge variant={currentQuestion.difficulty === "Easy" ? "easy" : currentQuestion.difficulty === "Medium" ? "medium" : "hard"}>
-                {currentQuestion.difficulty}
+              <Badge variant={currentQuestion.difficulty === "easy" ? "easy" : currentQuestion.difficulty === "medium" ? "medium" : "hard"}>
+                {currentQuestion.difficulty.charAt(0).toUpperCase() + currentQuestion.difficulty.slice(1)}
               </Badge>
-              {currentQuestion.isPremium && <Badge variant="warning">Premium</Badge>}
+              {currentQuestion.is_premium && <Badge variant="warning">Premium</Badge>}
             </div>
             
             <div className="flex items-center gap-4">
@@ -587,7 +661,7 @@ useEffect(() => {
                   <div className="grid md:grid-cols-2 gap-6">
                     <Whiteboard />
                     <div className="space-y-4">
-                      <HintSystem hints={currentQuestion.hints} />
+                      <HintSystem hints={currentQuestion.hints || []} />
                       <QuickCalculator />
                     </div>
                   </div>
@@ -731,7 +805,7 @@ useEffect(() => {
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-3">
-                    {currentQuestion.hints.map((hint, index) => (
+                    {(currentQuestion.hints || []).map((hint, index) => (
                       <div key={index} className="flex gap-3">
                         <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium flex-shrink-0">
                           {index + 1}

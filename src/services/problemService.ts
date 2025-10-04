@@ -17,11 +17,31 @@ export interface Problem {
   companies?: Array<{ name: string; industry: string }>
 }
 
+// Type matching the actual problems table in Supabase
+export interface DbProblem {
+  id: string
+  title: string
+  description: string
+  prompt?: string
+  difficulty: 'easy' | 'medium' | 'hard'
+  subject: string
+  industry: string
+  time_estimate: string
+  time_limit_minutes?: number
+  companies: string[]
+  hints?: string[]
+  solution?: string
+  solution_explanation?: string
+  is_premium: boolean
+  created_at?: string
+}
+
 export interface ProblemFilters {
   difficulty?: string
   topic?: string
   industry?: string
   search?: string
+  subject?: string
 }
 
 export const problemService = {
@@ -85,5 +105,59 @@ export const problemService = {
     if (error) throw error
     return data
   }
+}
+
+// Function specifically for the Practice page with proper filters
+export async function listProblems(filters: {
+  search?: string
+  difficulty?: string
+  subject?: string
+  industry?: string
+}): Promise<DbProblem[]> {
+  let query = supabase
+    .from('problems')
+    .select('*')
+
+  // Apply filters
+  if (filters.search && filters.search.trim() !== '') {
+    query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
+  }
+
+  if (filters.difficulty && filters.difficulty !== 'all') {
+    query = query.eq('difficulty', filters.difficulty)
+  }
+
+  if (filters.subject && filters.subject !== 'all') {
+    query = query.eq('subject', filters.subject)
+  }
+
+  if (filters.industry && filters.industry !== 'all') {
+    query = query.eq('industry', filters.industry)
+  }
+
+  const { data, error } = await query.order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching problems:', error)
+    throw error
+  }
+
+  return data as DbProblem[]
+}
+
+// Get a single problem by ID
+export async function getProblemById(problemId: string): Promise<DbProblem | null> {
+  const { data, error } = await supabase
+    .from('problems')
+    .select('*')
+    .eq('id', problemId)
+    .single()
+
+  if (error) {
+    console.error('Error fetching problem:', error)
+    return null
+  }
+
+  return data as DbProblem
 }
 
