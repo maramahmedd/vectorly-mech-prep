@@ -17,11 +17,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { submissionService } from "@/services/submissionService";
 import { getProblemById, type DbProblem } from "@/services/problemService";
 import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { 
+import {
   AlarmClock, BookText, Calculator, Check, ChevronRight, ChevronLeft, ClipboardCopy, Clock, FileQuestion,
-  Flag, HelpCircle, Highlighter, Info, Lightbulb, Loader2, Mic, MicOff, NotebookPen, Play, 
+  Flag, HelpCircle, Highlighter, Info, Lightbulb, Loader2, Mic, MicOff, NotebookPen, Play,
   Save, Settings, Sparkles, Square, StopCircle, TimerReset, Trash2, Upload, Home, Star,
-  Target, TrendingUp, ChevronDown, Lock
+  Target, TrendingUp, ChevronDown, Lock, Maximize2, Minimize2
 } from "lucide-react";
 
 // Countdown timer hook
@@ -41,18 +41,31 @@ function useCountdown(minutes = 45) {
 }
 
 // Whiteboard Canvas Component
-const Whiteboard = ({ height = 280 }) => {
+const Whiteboard = ({
+  height = 280,
+  isFullscreen = false,
+  onToggleFullscreen = () => {},
+  savedImageData = null,
+  onSaveImageData = () => {}
+}: {
+  height?: number;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+  savedImageData?: string | null;
+  onSaveImageData?: (data: string) => void;
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [drawing, setDrawing] = useState(false);
   const [lineWidth, setLineWidth] = useState(3);
   const [erase, setErase] = useState(false);
 
+  // Initialize canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    
+
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width * dpr;
@@ -60,7 +73,16 @@ const Whiteboard = ({ height = 280 }) => {
     ctx.scale(dpr, dpr);
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-  }, []);
+
+    // Restore saved image data if available
+    if (savedImageData) {
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, rect.width, rect.height);
+      };
+      img.src = savedImageData;
+    }
+  }, [isFullscreen, savedImageData]);
 
   const handlePointer = (type: string, e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current;
@@ -104,34 +126,56 @@ const Whiteboard = ({ height = 280 }) => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
+  const saveCanvasData = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL();
+    onSaveImageData(dataUrl);
+  };
+
+  const handleToggleFullscreen = () => {
+    saveCanvasData();
+    onToggleFullscreen();
+  };
+
   return (
-    <div className="w-full">
-      <div className="flex items-center gap-3 mb-3">
+    <div className="w-full h-full flex flex-col">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
         <Badge variant="outline" className="text-xs">Whiteboard</Badge>
         <div className="flex items-center gap-2">
           <Highlighter className="w-4 h-4" />
-          <Slider 
-            value={[lineWidth]} 
-            max={10} 
-            min={1} 
-            step={1} 
-            onValueChange={(v) => setLineWidth(v[0])} 
-            className="w-20"
+          <Slider
+            value={[lineWidth]}
+            max={10}
+            min={1}
+            step={1}
+            onValueChange={(v) => setLineWidth(v[0])}
+            className="w-16 sm:w-20"
           />
         </div>
         <div className="flex items-center gap-2">
-          <Switch id="erase" checked={erase} onCheckedChange={setErase} />
-          <label htmlFor="erase" className="text-xs text-muted-foreground">Eraser</label>
+          <Switch id={`erase-${isFullscreen ? 'fs' : 'normal'}`} checked={erase} onCheckedChange={setErase} />
+          <label htmlFor={`erase-${isFullscreen ? 'fs' : 'normal'}`} className="text-xs text-muted-foreground">
+            <span className="hidden sm:inline">Eraser</span>
+            <span className="sm:hidden">Erase</span>
+          </label>
         </div>
         <Button size="sm" variant="outline" onClick={clearBoard}>
-          <Trash2 className="w-3 h-3 mr-1"/>Clear
+          <Trash2 className="w-3 h-3 mr-1"/>
+          <span className="hidden sm:inline">Clear</span>
         </Button>
+        {!isFullscreen && (
+          <Button size="sm" variant="outline" onClick={handleToggleFullscreen}>
+            <Maximize2 className="w-3 h-3 mr-1"/>
+            <span className="hidden sm:inline">Expand</span>
+          </Button>
+        )}
       </div>
-      <div className="rounded-lg border-2 border-dashed border-muted bg-background">
+      <div className={`rounded-lg border-2 border-dashed border-muted bg-background ${isFullscreen ? 'flex-1' : ''}`}>
         <canvas
           ref={canvasRef}
           className="w-full rounded-lg cursor-crosshair touch-none"
-          style={{ height: `${height}px` }}
+          style={{ height: isFullscreen ? '100%' : `${height}px` }}
           onMouseDown={(e) => handlePointer("down", e)}
           onMouseMove={(e) => handlePointer("move", e)}
           onMouseUp={(e) => handlePointer("up", e)}
@@ -374,6 +418,10 @@ const PracticeInterface = () => {
   const [notes, setNotes] = useState("");
   const [notesLoaded, setNotesLoaded] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+
+  // Whiteboard fullscreen state
+  const [whiteboardFullscreen, setWhiteboardFullscreen] = useState(false);
+  const [whiteboardImageData, setWhiteboardImageData] = useState<string | null>(null);
 
   // Dynamic problem loading from Supabase
   const [currentQuestion, setCurrentQuestion] = useState<DbProblem | null>(null);
@@ -671,7 +719,11 @@ useEffect(() => {
                   
                   {/* Whiteboard and Tools */}
                   <div className="grid md:grid-cols-2 gap-6">
-                    <Whiteboard />
+                    <Whiteboard
+                      onToggleFullscreen={() => setWhiteboardFullscreen(true)}
+                      savedImageData={whiteboardImageData}
+                      onSaveImageData={setWhiteboardImageData}
+                    />
                     <div className="space-y-4">
                       <HintSystem hints={currentQuestion.hints || []} />
                       <QuickCalculator />
@@ -837,6 +889,36 @@ useEffect(() => {
             </div>
           </div>
         </div>
+
+        {/* Fullscreen Whiteboard Dialog */}
+        <Dialog open={whiteboardFullscreen} onOpenChange={setWhiteboardFullscreen}>
+          <DialogContent className="max-w-[100vw] h-[100vh] w-full p-0 gap-0">
+            <div className="flex flex-col h-full">
+              <DialogHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b flex-shrink-0">
+                <div className="flex items-center justify-between">
+                  <DialogTitle className="text-base sm:text-lg">Whiteboard - Full Screen</DialogTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setWhiteboardFullscreen(false)}
+                  >
+                    <Minimize2 className="w-4 h-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Exit Fullscreen</span>
+                    <span className="sm:hidden">Exit</span>
+                  </Button>
+                </div>
+              </DialogHeader>
+              <div className="flex-1 p-4 sm:p-6 overflow-hidden">
+                <Whiteboard
+                  isFullscreen={true}
+                  onToggleFullscreen={() => setWhiteboardFullscreen(false)}
+                  savedImageData={whiteboardImageData}
+                  onSaveImageData={setWhiteboardImageData}
+                />
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </TooltipProvider>
   );
