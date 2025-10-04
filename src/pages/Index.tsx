@@ -68,37 +68,37 @@ const Index = () => {
       
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-hero text-white">
-        <div className="container mx-auto px-4 py-20 lg:py-32">
+        <div className="container mx-auto px-4 py-12 sm:py-16 lg:py-32">
           <div className="text-center animate-fade-in">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Master Mechanical Engineering <br />
-              <span >Interview Success</span>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 leading-tight">
+              Master Mechanical Engineering <br className="hidden sm:block" />
+              <span>Interview Success</span>
             </h1>
-            <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-3xl mx-auto">
-              The only platform designed specifically for ME students and new grads. 
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 sm:mb-8 text-white/90 max-w-3xl mx-auto px-4">
+              The only platform designed specifically for ME students and new grads.
               Practice real interview questions, master essential theory, and land your dream internship.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                variant="hero" 
-                size="lg" 
-                className="text-lg hover:bg-green-600 hover:border-green-600 transition-all duration-200" 
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
+              <Button
+                variant="hero"
+                size="lg"
+                className="text-base sm:text-lg hover:bg-green-600 hover:border-green-600 transition-all duration-200 w-full sm:w-auto"
                 asChild
               >
                 <Link to="practice">Start Practicing <ArrowRight className="ml-2" /></Link>
               </Button>
             </div>
-            <div className="mt-8 flex items-center justify-center gap-6 text-white/80">
+            <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-sm sm:text-base text-white/80">
               <div className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
+                <Users className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>500+ Students</span>
               </div>
               <div className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5" />
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>1000+ Problems</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5" />
+                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>95% Success Rate</span>
               </div>
             </div>
@@ -193,16 +193,16 @@ const Index = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-gradient-card">
+      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-card">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Vectorly Works</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <div className="text-center mb-8 sm:mb-12 lg:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">Why Vectorly Works</h2>
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
               Unlike generic coding platforms, we understand the unique challenges of mechanical engineering interviews.
             </p>
           </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-8 sm:mb-12 lg:mb-16">
             {features.map((feature, index) => (
               <Card key={index} className="border-0 shadow-medium hover:shadow-strong transition-all duration-300 hover:scale-105">
                 <CardHeader className="text-center">
@@ -219,9 +219,9 @@ const Index = () => {
           </div>
 
           {/* Testimonials */}
-          <div className="text-center mb-12">
-            <h3 className="text-2xl font-bold mb-8">What Students Say</h3>
-            <div className="grid md:grid-cols-3 gap-8">
+          <div className="text-center mb-8 sm:mb-12">
+            <h3 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">What Students Say</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
               {[
                 {
                   name: "Sarah Chen",
@@ -264,11 +264,11 @@ const Index = () => {
       </section>
 
       {/* Problem Preview Section */}
-      <section className="py-20">
+      <section className="py-12 sm:py-16 lg:py-20">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Practice Real Interview Questions</h2>
-            <p className="text-xl text-muted-foreground">
+          <div className="text-center mb-8 sm:mb-12 lg:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">Practice Real Interview Questions</h2>
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground px-4">
               Questions tagged by difficulty, industry, and engineering discipline
             </p>
           </div>
@@ -276,23 +276,23 @@ const Index = () => {
           <div className="max-w-4xl mx-auto">
             <Card className="shadow-strong">
               <CardHeader className="border-b">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="medium">Medium</Badge>
                     <Badge variant="outline">Thermodynamics</Badge>
                     <Badge variant="outline">Automotive</Badge>
                   </div>
-                  <Star className="w-5 h-5 text-warning" />
+                  <Star className="w-5 h-5 text-warning flex-shrink-0" />
                 </div>
-                <CardTitle className="text-left">Heat Engine Efficiency Analysis</CardTitle>
+                <CardTitle className="text-left text-lg sm:text-xl mt-3">Heat Engine Efficiency Analysis</CardTitle>
               </CardHeader>
-              <CardContent className="pt-6">
-                <p className="text-muted-foreground mb-4">
-                  Design a heat engine operating between two thermal reservoirs at 800K and 300K. 
-                  Calculate the maximum theoretical efficiency and explain how real-world factors 
+              <CardContent className="pt-4 sm:pt-6">
+                <p className="text-sm sm:text-base text-muted-foreground mb-4">
+                  Design a heat engine operating between two thermal reservoirs at 800K and 300K.
+                  Calculate the maximum theoretical efficiency and explain how real-world factors
                   would affect this efficiency in an automotive application.
                 </p>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                   <span>💡 Linked Theory: Carnot Cycle, Second Law of Thermodynamics</span>
                   <span>🏢 Asked at: Ford, GM, Tesla</span>
                 </div>
@@ -303,7 +303,7 @@ const Index = () => {
       </section>
 
       {/* Pricing Section */}
-      <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 max-w-4xl mx-auto px-4">
         {pricingTiers.map((tier, index) => (
           <Card key={index} className={`relative ${tier.popular ? 'border-primary shadow-strong scale-105' : 'shadow-medium'}`}>
             {tier.popular && (
@@ -341,15 +341,15 @@ const Index = () => {
 </div>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-hero text-white">
+      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-hero text-white">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">
             Ready to Ace Your Next Interview?
           </h2>
-          <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 text-white/90 max-w-2xl mx-auto">
             Join hundreds of mechanical engineering students who've landed their dream roles with Vectorly.
           </p>
-          <Button variant="hero" size="lg" className="text-lg" asChild>
+          <Button variant="hero" size="lg" className="text-base sm:text-lg w-full sm:w-auto" asChild>
             <Link to="practice">Start Your Free Trial <ArrowRight className="ml-2" /></Link>
           </Button>
         </div>

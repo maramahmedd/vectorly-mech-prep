@@ -203,42 +203,42 @@ const Practice = () => {
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Practice Problems</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2">Practice Problems</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">
                 Master mechanical engineering interviews with real questions
               </p>
             </div>
 
-            <div className="flex gap-4">
-              <Card className="text-center p-4">
-                <div className="text-2xl font-bold text-primary">
+            <div className="flex gap-3 sm:gap-4 w-full lg:w-auto">
+              <Card className="text-center p-3 sm:p-4 flex-1 lg:flex-none">
+                <div className="text-xl sm:text-2xl font-bold text-primary">
                   {loading ? (
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+                    <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin mx-auto" />
                   ) : (
                     submissionStats.solved
                   )}
                 </div>
-                <div className="text-sm text-muted-foreground">Solved</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Solved</div>
               </Card>
-              <Card className="text-center p-4">
-                <div className="text-2xl font-bold text-accent">
+              <Card className="text-center p-3 sm:p-4 flex-1 lg:flex-none">
+                <div className="text-xl sm:text-2xl font-bold text-accent">
                   {loading ? (
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+                    <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin mx-auto" />
                   ) : (
                     Math.round(submissionStats.totalTime / 60)
                   )}
                 </div>
-                <div className="text-sm text-muted-foreground">Hours</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Hours</div>
               </Card>
-              <Card className="text-center p-4">
-                <div className="text-2xl font-bold text-warning">
+              <Card className="text-center p-3 sm:p-4 flex-1 lg:flex-none">
+                <div className="text-xl sm:text-2xl font-bold text-warning">
                   {loading ? (
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+                    <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin mx-auto" />
                   ) : (
                     `${submissionStats.accuracy}%`
                   )}
                 </div>
-                <div className="text-sm text-muted-foreground">Accuracy</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Accuracy</div>
               </Card>
             </div>
           </div>
@@ -246,14 +246,14 @@ const Practice = () => {
           {/* Interactive Practice Mode Banner */}
           <Card className="border-primary shadow-strong bg-gradient-primary text-white mb-6">
             <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold mb-1">🚀 Interactive Practice Mode</h3>
-                  <p className="text-white/90 text-sm">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex-1">
+                  <h3 className="text-base sm:text-lg font-semibold mb-1">🚀 Interactive Practice Mode</h3>
+                  <p className="text-white/90 text-xs sm:text-sm">
                     Experience real interview conditions with whiteboard, timer, and structured feedback
                   </p>
                 </div>
-                <Button variant="secondary" size="lg" asChild>
+                <Button variant="secondary" size="lg" className="w-full sm:w-auto whitespace-nowrap" asChild>
                   <Link to="interface">
                     Try Interactive Mode
                     <ArrowRight className="ml-2 w-4 h-4" />
@@ -340,41 +340,43 @@ const Practice = () => {
               {freeProblems.map((problem) => (
                 <Card
                   key={problem.id}
-                  className="shadow-medium hover:shadow-strong transition-all duration-200 hover:scale-[1.01]"
+                  className="shadow-medium hover:shadow-strong transition-all duration-200"
                 >
                   <CardHeader>
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
                           {getSubmissionStatus(problem.id) && (
-                            <CheckCircle className="w-5 h-5 text-success" />
+                            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
                           )}
-                          <Badge variant={getDifficultyVariant(problem.difficulty)}>
+                          <Badge variant={getDifficultyVariant(problem.difficulty)} className="text-xs">
                             {problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}
                           </Badge>
-                          <Badge variant="outline">{problem.subject}</Badge>
-                          <Badge variant="outline">{problem.industry}</Badge>
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Clock className="w-4 h-4" />
+                          <Badge variant="outline" className="text-xs">{problem.subject}</Badge>
+                          <Badge variant="outline" className="text-xs">{problem.industry}</Badge>
+                          <div className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground">
+                            <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
                             {problem.time_estimate}
                           </div>
                         </div>
-                        <CardTitle className="text-lg hover:text-primary cursor-pointer transition-colors">
+                        <CardTitle className="text-base sm:text-lg hover:text-primary cursor-pointer transition-colors">
                           {problem.title}
                         </CardTitle>
-                        <p className="text-muted-foreground mt-2">{problem.description}</p>
-                        <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
-                          <Target className="w-4 h-4" />
+                        <p className="text-sm sm:text-base text-muted-foreground mt-2">{problem.description}</p>
+                        <div className="flex items-center gap-2 mt-3 text-xs sm:text-sm text-muted-foreground">
+                          <Target className="w-3 h-3 sm:w-4 sm:h-4" />
                           <span>Asked at: {problem.companies.join(", ")}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 ml-4">
-                        <Button variant="outline" size="sm">
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" className="flex-shrink-0">
                           <Star className="w-4 h-4" />
                         </Button>
                         <Button
                           variant={getButtonVariant(problem.id)}
                           onClick={() => handleProblemClick(problem.id)}
+                          className="flex-1 sm:flex-none"
+                          size="sm"
                         >
                           {getButtonText(problem.id)}
                         </Button>
@@ -401,56 +403,58 @@ const Practice = () => {
                   className={`shadow-medium ${
                     !canAccessPremium
                       ? "opacity-60"
-                      : "hover:shadow-strong transition-all duration-200 hover:scale-[1.01]"
+                      : "hover:shadow-strong transition-all duration-200"
                   }`}
                 >
                   <CardHeader>
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          {!canAccessPremium && <Lock className="w-4 h-4 text-warning" />}
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
+                          {!canAccessPremium && <Lock className="w-3 h-3 sm:w-4 sm:h-4 text-warning" />}
                           {canAccessPremium && getSubmissionStatus(problem.id) && (
-                            <CheckCircle className="w-5 h-5 text-success" />
+                            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
                           )}
-                          <Badge variant={getDifficultyVariant(problem.difficulty)}>
+                          <Badge variant={getDifficultyVariant(problem.difficulty)} className="text-xs">
                             {problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}
                           </Badge>
-                          <Badge variant="outline">{problem.subject}</Badge>
-                          <Badge variant="outline">{problem.industry}</Badge>
+                          <Badge variant="outline" className="text-xs">{problem.subject}</Badge>
+                          <Badge variant="outline" className="text-xs">{problem.industry}</Badge>
                           <Badge variant="warning" className="text-xs">
                             Premium
                           </Badge>
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Clock className="w-4 h-4" />
+                          <div className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground">
+                            <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
                             {problem.time_estimate}
                           </div>
                         </div>
                         <CardTitle
-                          className={`text-lg ${
+                          className={`text-base sm:text-lg ${
                             canAccessPremium ? "hover:text-primary cursor-pointer" : ""
                           } transition-colors`}
                         >
                           {problem.title}
                         </CardTitle>
-                        <p className="text-muted-foreground mt-2">{problem.description}</p>
-                        <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
-                          <Target className="w-4 h-4" />
+                        <p className="text-sm sm:text-base text-muted-foreground mt-2">{problem.description}</p>
+                        <div className="flex items-center gap-2 mt-3 text-xs sm:text-sm text-muted-foreground">
+                          <Target className="w-3 h-3 sm:w-4 sm:h-4" />
                           <span>Asked at: {problem.companies.join(", ")}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 ml-4">
-                        <Button variant="outline" size="sm" disabled={!canAccessPremium}>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" disabled={!canAccessPremium} className="flex-shrink-0">
                           <Star className="w-4 h-4" />
                         </Button>
                         {canAccessPremium ? (
                           <Button
                             variant={getButtonVariant(problem.id)}
                             onClick={() => handleProblemClick(problem.id)}
+                            className="flex-1 sm:flex-none"
+                            size="sm"
                           >
                             {getButtonText(problem.id)}
                           </Button>
                         ) : (
-                          <Button variant="outline" asChild>
+                          <Button variant="outline" className="flex-1 sm:flex-none" size="sm" asChild>
                             <Link to="/upgrade">
                               <Lock className="w-4 h-4 mr-1" />
                               Upgrade

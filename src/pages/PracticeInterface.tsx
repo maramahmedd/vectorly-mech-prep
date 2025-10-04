@@ -62,15 +62,24 @@ const Whiteboard = ({ height = 280 }) => {
     ctx.lineJoin = "round";
   }, []);
 
-  const handlePointer = (type: string, e: React.MouseEvent) => {
+  const handlePointer = (type: string, e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    
+
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    let x: number, y: number;
+
+    // Support both mouse and touch events
+    if ('touches' in e) {
+      if (e.touches.length === 0) return;
+      x = e.touches[0].clientX - rect.left;
+      y = e.touches[0].clientY - rect.top;
+    } else {
+      x = e.clientX - rect.left;
+      y = e.clientY - rect.top;
+    }
 
     if (type === "down") {
       setDrawing(true);
@@ -121,12 +130,15 @@ const Whiteboard = ({ height = 280 }) => {
       <div className="rounded-lg border-2 border-dashed border-muted bg-background">
         <canvas
           ref={canvasRef}
-          className="w-full rounded-lg cursor-crosshair"
+          className="w-full rounded-lg cursor-crosshair touch-none"
           style={{ height: `${height}px` }}
           onMouseDown={(e) => handlePointer("down", e)}
           onMouseMove={(e) => handlePointer("move", e)}
           onMouseUp={(e) => handlePointer("up", e)}
           onMouseLeave={(e) => handlePointer("up", e)}
+          onTouchStart={(e) => { e.preventDefault(); handlePointer("down", e); }}
+          onTouchMove={(e) => { e.preventDefault(); handlePointer("move", e); }}
+          onTouchEnd={(e) => { e.preventDefault(); handlePointer("up", e); }}
         />
       </div>
     </div>

@@ -206,8 +206,8 @@ const Dashboard = () => {
         {/* Welcome Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Welcome back, {user.name}!</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold">Welcome back, {user.name}!</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               {user.university && user.major ? (
                 <>
                   {user.major} • {user.university} • Class of {user.graduation_year}
@@ -217,14 +217,16 @@ const Dashboard = () => {
               )}
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button variant="outline" className="w-full sm:w-auto" size="sm">
               <Trophy className="mr-2 h-4 w-4"/>
-              View Achievements
+              <span className="hidden sm:inline">View Achievements</span>
+              <span className="sm:hidden">Achievements</span>
             </Button>
-            <Button variant="hero">
+            <Button variant="hero" className="w-full sm:w-auto" size="sm">
               <Target className="mr-2 h-4 w-4"/>
-              Set Goals
+              <span className="hidden sm:inline">Set Goals</span>
+              <span className="sm:hidden">Goals</span>
             </Button>
           </div>
         </div>
@@ -297,9 +299,9 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <Card className="xl:col-span-2 shadow-medium">
             <CardHeader>
-              <CardTitle>Weekly Performance</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Weekly Performance</CardTitle>
             </CardHeader>
-            <CardContent className="h-72">
+            <CardContent className="h-64 sm:h-72">
               {weeklyLoading ? (
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -336,9 +338,9 @@ const Dashboard = () => {
           {/* Subject Focus Pie */}
           <Card className="shadow-medium">
             <CardHeader>
-              <CardTitle>Subject Focus</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Subject Focus</CardTitle>
             </CardHeader>
-            <CardContent className="h-72">
+            <CardContent className="h-64 sm:h-72">
               {subjectLoading ? (
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -450,13 +452,13 @@ const Dashboard = () => {
         </Card>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           <Card className="shadow-medium hover:shadow-strong transition-all cursor-pointer group">
             <CardContent className="pt-6 text-center">
               <Target className="w-8 h-8 text-primary mx-auto mb-2 group-hover:scale-110 transition-transform" />
-              <h3 className="font-semibold mb-1">Practice Problems</h3>
-              <p className="text-sm text-muted-foreground mb-3">Solve new interview questions</p>
-              <Button variant="outline" size="sm" asChild>
+              <h3 className="font-semibold mb-1 text-base">Practice Problems</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-3">Solve new interview questions</p>
+              <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
                 <Link to="practice">
                   Start Practicing <ArrowRight className="ml-1 w-3 h-3" />
                 </Link>
@@ -467,9 +469,9 @@ const Dashboard = () => {
           <Card className="shadow-medium hover:shadow-strong transition-all cursor-pointer group">
             <CardContent className="pt-6 text-center">
               <BookOpen className="w-8 h-8 text-primary mx-auto mb-2 group-hover:scale-110 transition-transform" />
-              <h3 className="font-semibold mb-1">Study Theory</h3>
-              <p className="text-sm text-muted-foreground mb-3">Review fundamental concepts</p>
-              <Button variant="outline" size="sm">
+              <h3 className="font-semibold mb-1 text-base">Study Theory</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-3">Review fundamental concepts</p>
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
                 Coming Soon
               </Button>
             </CardContent>
@@ -478,9 +480,9 @@ const Dashboard = () => {
           <Card className="shadow-medium hover:shadow-strong transition-all cursor-pointer group">
             <CardContent className="pt-6 text-center">
               <Trophy className="w-8 h-8 text-primary mx-auto mb-2 group-hover:scale-110 transition-transform" />
-              <h3 className="font-semibold mb-1">Mock Interview</h3>
-              <p className="text-sm text-muted-foreground mb-3">Practice with AI interviewer</p>
-              <Button variant="outline" size="sm">
+              <h3 className="font-semibold mb-1 text-base">Mock Interview</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-3">Practice with AI interviewer</p>
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
                 Coming Soon
               </Button>
             </CardContent>
