@@ -2,27 +2,25 @@
 import { supabase } from '@/lib/supabase';
 
 // --- Realtime helpers ---
-let uiChannel: ReturnType<typeof supabase.channel> | null = null;
-
-function getUiChannel() {
-  if (!uiChannel) {
-    uiChannel = supabase.channel('ui-updates', { config: { broadcast: { self: false } } });
-    uiChannel.subscribe();
-  }
-  return uiChannel;
-}
-
+// Simple approach: just fire and forget, don't wait for channel setup
 async function broadcastAttemptsChanged() {
-  // Obtain current user id safely inside the service
-  const { data } = await supabase.auth.getUser();
-  const userId = data.user?.id;
-  if (!userId) return;
+  try {
+    const { data } = await supabase.auth.getUser();
+    const userId = data.user?.id;
+    if (!userId) return;
 
-  getUiChannel().send({
-    type: 'broadcast',
-    event: 'attempts_changed',
-    payload: { userId },
-  });
+    console.log('📤 Broadcasting attempts_changed for user:', userId);
+
+    // Just send, don't wait
+    supabase.channel('ui-updates').send({
+      type: 'broadcast',
+      event: 'attempts_changed',
+      payload: { userId },
+    });
+  } catch (error) {
+    console.error('Broadcast error:', error);
+    // Don't throw - let the main flow continue
+  }
 }
 
 export interface SubmissionData {
@@ -51,10 +49,16 @@ export interface UserSubmission {
 
 export const submissionService = {
   async submitAnswer(data: SubmissionData): Promise<UserSubmission> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    console.log('🎯 submitAnswer called with:', data);
 
-    console.log('Submitting answer:', data);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('❌ No user found in submitAnswer');
+      throw new Error('Not authenticated');
+    }
+
+    console.log('✅ User authenticated:', user.id);
+    console.log('📝 Submitting answer:', data);
 
     try {
       // Use upsert to handle both create and update in one operation

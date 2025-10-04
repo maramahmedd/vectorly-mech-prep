@@ -27,7 +27,7 @@ export interface SubjectProgress {
   total: number;
 }
 
-export const useDashboardStats = () => {
+export const useDashboardStats = (reloadTrigger?: number) => {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalSolved: 0,
@@ -48,7 +48,7 @@ export const useDashboardStats = () => {
     }
 
     fetchDashboardStats();
-  }, [user]);
+  }, [user, reloadTrigger]);
 
   const fetchDashboardStats = async () => {
     if (!user) return;
@@ -126,7 +126,7 @@ export const useDashboardStats = () => {
   return { stats, loading, error, refetch: fetchDashboardStats };
 };
 
-export const useWeeklyProgress = () => {
+export const useWeeklyProgress = (reloadTrigger?: number) => {
   const { user } = useAuth();
   const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,8 +137,9 @@ export const useWeeklyProgress = () => {
       return;
     }
 
+    console.log('🔄 useWeeklyProgress triggered, reloadTrigger:', reloadTrigger);
     fetchWeeklyProgress();
-  }, [user]);
+  }, [user, reloadTrigger]);
 
   const fetchWeeklyProgress = async () => {
     if (!user) return;
@@ -147,16 +148,18 @@ export const useWeeklyProgress = () => {
       setLoading(true);
       console.log('Fetching weekly progress for user:', user.id);
 
-      // Get last 7 days of submissions
+      // Get last 7 days of submissions (using UTC to match database timestamps)
+      const today = new Date();
       const dates = Array.from({ length: 7 }, (_, i) => {
         const date = new Date();
-        date.setDate(date.getDate() - (6 - i));
+        date.setDate(today.getDate() - (6 - i));
+        date.setHours(0, 0, 0, 0);
         return date;
       });
 
-      const startDate = dates[0];
+      const startDate = new Date(dates[0]);
       startDate.setHours(0, 0, 0, 0);
-      const endDate = dates[6];
+      const endDate = new Date(dates[6]);
       endDate.setHours(23, 59, 59, 999);
 
       const { data: submissions, error } = await supabase
@@ -171,15 +174,30 @@ export const useWeeklyProgress = () => {
         throw error;
       }
 
-      console.log('Weekly submissions:', submissions);
+      console.log('📊 Weekly submissions fetched:', submissions?.length || 0, submissions);
+      console.log('📊 Date range being checked:', startDate.toISOString(), 'to', endDate.toISOString());
 
-      // Map data to chart format
+      // Map data to chart format - use local date string for matching
       const chartData = dates.map(date => {
-        const dateStr = date.toISOString().split('T')[0];
-        const daySubmissions = submissions?.filter(s => 
-          s.created_at.startsWith(dateStr)
-        ) || [];
-        
+        // Get date string in local timezone YYYY-MM-DD format
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const localDateStr = `${year}-${month}-${day}`;
+
+        const daySubmissions = submissions?.filter(s => {
+          // Convert UTC timestamp to local date string
+          const submissionDate = new Date(s.created_at);
+          const subYear = submissionDate.getFullYear();
+          const subMonth = String(submissionDate.getMonth() + 1).padStart(2, '0');
+          const subDay = String(submissionDate.getDate()).padStart(2, '0');
+          const submissionLocalDateStr = `${subYear}-${subMonth}-${subDay}`;
+
+          const matches = submissionLocalDateStr === localDateStr;
+          console.log('📊 Checking - local:', localDateStr, 'submission:', submissionLocalDateStr, 'matches:', matches);
+          return matches;
+        }) || [];
+
         return {
           day: date.toLocaleDateString('en-US', { weekday: 'short' }),
           attempted: daySubmissions.length,
@@ -187,7 +205,7 @@ export const useWeeklyProgress = () => {
         };
       });
 
-      console.log('Weekly chart data:', chartData);
+      console.log('📊 Weekly chart data:', chartData);
       setWeeklyData(chartData);
     } catch (error) {
       console.error('Error fetching weekly progress:', error);
@@ -210,7 +228,7 @@ export const useWeeklyProgress = () => {
   return { weeklyData, loading, refetch: fetchWeeklyProgress };
 };
 
-export const useSubjectProgress = () => {
+export const useSubjectProgress = (reloadTrigger?: number) => {
   const { user } = useAuth();
   const [subjectData, setSubjectData] = useState<SubjectProgress[]>([]);
   const [loading, setLoading] = useState(true);
@@ -222,7 +240,7 @@ export const useSubjectProgress = () => {
     }
 
     fetchSubjectProgress();
-  }, [user]);
+  }, [user, reloadTrigger]);
 
   const fetchSubjectProgress = async () => {
     if (!user) return;

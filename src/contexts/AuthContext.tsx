@@ -52,33 +52,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Force loading to false after 10 seconds max
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      console.log('🚨 FORCE STOPPING LOADING AFTER 10 SECONDS');
-      setLoading(false);
-    }, 10000);
-
-    return () => clearTimeout(timeout);
-  }, []);
-
   useEffect(() => {
     let mounted = true;
 
     const initAuth = async () => {
       console.log('🚀 Starting auth initialization...');
-      
+      console.log('🔍 Supabase client exists:', !!supabase);
+      console.log('🔍 Supabase auth exists:', !!supabase?.auth);
+
       try {
-        // Add timeout to session fetch
+        console.log('📞 Calling supabase.auth.getSession()...');
+
+        // Add timeout to getSession
         const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session timeout')), 5000)
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('getSession timeout')), 3000)
         );
 
-        const { data: { session }, error } = await Promise.race([
-          sessionPromise,
-          timeoutPromise
-        ]) as any;
+        const result = await Promise.race([sessionPromise, timeoutPromise]);
+        const { data: { session }, error } = result as any;
+        console.log('📞 getSession() completed');
         
         console.log('📡 Session result:', { session: !!session, error });
 
@@ -137,88 +130,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadUserData = async (authUser: SupabaseUser) => {
     console.log('📝 Loading user data for:', authUser.id);
-    
-    try {
-      // Add timeout to user data fetch
-      const userPromise = supabase
-        .from('users')
-        .select('*')
-        .eq('id', authUser.id)
-        .single();
 
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('User data timeout')), 5000)
-      );
+    // Create user from auth metadata immediately (skip database query due to connection issues)
+    const user = {
+      id: authUser.id,
+      name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+      email: authUser.email || '',
+      university: authUser.user_metadata?.university || '',
+      major: authUser.user_metadata?.major || 'Mechanical Engineering',
+      graduation_year: authUser.user_metadata?.graduation_year || '',
+      subscription_tier: 'free' as const,
+      total_problems_solved: 0,
+      current_streak: 0,
+      best_streak: 0,
+      total_study_time_minutes: 0,
+    };
 
-      const { data: userData, error } = await Promise.race([
-        userPromise,
-        timeoutPromise
-      ]) as any;
-
-      console.log('📊 User data result:', { userData: !!userData, error });
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('❌ User data error:', error);
-        throw error;
-      }
-
-      if (userData) {
-        console.log('✅ Setting user data from database');
-        setUser({
-          id: authUser.id,
-          name: userData.name || authUser.user_metadata?.name || '',
-          email: authUser.email || '',
-          university: userData.university,
-          major: userData.major,
-          graduation_year: userData.graduation_year,
-          created_at: userData.created_at ? new Date(userData.created_at) : undefined,
-          subscription_tier: userData.subscription_tier || 'free',
-          total_problems_solved: userData.total_problems_solved || 0,
-          current_streak: userData.current_streak || 0,
-          best_streak: userData.best_streak || 0,
-          total_study_time_minutes: userData.total_study_time_minutes || 0,
-        });
-      } else {
-        console.log('⚠️ No user data found, creating fallback');
-        setUser({
-          id: authUser.id,
-          name: authUser.user_metadata?.name || '',
-          email: authUser.email || '',
-          university: authUser.user_metadata?.university || '',
-          major: authUser.user_metadata?.major || 'Mechanical Engineering',
-          graduation_year: authUser.user_metadata?.graduation_year || '',
-          subscription_tier: 'free',
-          total_problems_solved: 0,
-          current_streak: 0,
-          best_streak: 0,
-          total_study_time_minutes: 0,
-        });
-      }
-
-    } catch (error) {
-      console.error('💥 Load user data error:', error);
-      // Always create fallback user on error
-      setUser({
-        id: authUser.id,
-        name: authUser.user_metadata?.name || '',
-        email: authUser.email || '',
-        subscription_tier: 'free',
-        total_problems_solved: 0,
-        current_streak: 0,
-        best_streak: 0,
-        total_study_time_minutes: 0,
-      });
-    } finally {
-      console.log('🏁 Setting loading to false');
-      setLoading(false);
-    }
+    console.log('✅ User created from auth metadata:', user);
+    setUser(user);
+    setLoading(false);
   };
 
   const signup = async (userData: SignupData) => {
     const { email, password, name, university, major, graduationYear } = userData;
-    
+
     console.log('📝 Starting signup...');
-    
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -231,12 +168,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     });
-    
+
     if (error) {
       console.error('❌ Signup error:', error);
       throw error;
     }
-    
+
+    // Create user record in database (backup in case trigger doesn't work)
+    if (data.user) {
+      console.log('📝 Creating user record in database...');
+      try {
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: data.user.id,
+            email: email,
+            name: name,
+            university: university || '',
+            major: major || 'Mechanical Engineering',
+            graduation_year: graduationYear || '',
+          });
+
+        if (insertError && insertError.code !== '23505') { // 23505 = unique violation (already exists)
+          console.error('⚠️ Failed to create user record:', insertError);
+        } else {
+          console.log('✅ User record created');
+        }
+      } catch (err) {
+        console.error('⚠️ Error creating user record:', err);
+      }
+    }
+
     console.log('✅ Signup successful');
   };
 

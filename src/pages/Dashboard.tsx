@@ -40,9 +40,11 @@ const Dashboard = () => {
     if (!user) return;
 
     const ch = supabase
-      .channel("ui-updates", { config: { broadcast: { self: false } } })
+      .channel("ui-updates", { config: { broadcast: { self: true } } })
       .on("broadcast", { event: "attempts_changed" }, (msg) => {
+        console.log('📡 Dashboard received broadcast:', msg);
         if (msg?.payload?.userId === user.id) {
+          console.log('✅ Reloading dashboard data...');
           setReloadKey((k) => k + 1);
         }
       })
@@ -53,10 +55,10 @@ const Dashboard = () => {
     };
   }, [user?.id]);
 
-  // NOTE: hooks read data; by keying sections below, they refetch on remount after broadcast
-  const { stats, loading: statsLoading } = useDashboardStats();
-  const { weeklyData, loading: weeklyLoading } = useWeeklyProgress();
-  const { subjectData, loading: subjectLoading } = useSubjectProgress();
+  // NOTE: hooks read data and refetch when reloadKey changes
+  const { stats, loading: statsLoading } = useDashboardStats(reloadKey);
+  const { weeklyData, loading: weeklyLoading } = useWeeklyProgress(reloadKey);
+  const { subjectData, loading: subjectLoading } = useSubjectProgress(reloadKey);
 
   // Show loading state while checking auth
   if (authLoading) {
@@ -197,8 +199,7 @@ const Dashboard = () => {
   ];
 
   return (
-    // ⬇️ Keyed container — remounts on broadcast to refetch via hooks on mount
-    <div className="min-h-screen bg-gradient-card" key={reloadKey}>
+    <div className="min-h-screen bg-gradient-card">
       <Navbar />
       
       <div className="container mx-auto px-4 py-8 space-y-6">

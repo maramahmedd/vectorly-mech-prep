@@ -94,9 +94,11 @@ const Practice = () => {
   useEffect(() => {
     if (!user) return;
     const ch = supabase
-      .channel("ui-updates", { config: { broadcast: { self: false } } })
+      .channel("ui-updates", { config: { broadcast: { self: true } } })
       .on("broadcast", { event: "attempts_changed" }, (msg) => {
+        console.log('📡 Practice page received broadcast:', msg);
         if (msg?.payload?.userId === user.id) {
+          console.log('✅ Reloading practice data...');
           loadUserData();
         }
       })
@@ -146,14 +148,20 @@ const Practice = () => {
     return status === "solved" ? "success" : "default";
   };
 
-  // Click → navigate + mark attempted (optimistic)
+  // Click → navigate + mark attempted (fire and forget)
   const handleProblemClick = (problemId: string) => {
     if (!user) return;
+
+    console.log('🎯 User clicked problem:', problemId);
+
+    // Navigate immediately, mark in background
     navigate(`/practice/interface?problem=${problemId}`);
+
+    // Mark as attempted in background (don't wait)
     submissionService
       .markAsAttempted(problemId)
-      .then(() => loadUserData())
-      .catch((err) => console.error("Background marking failed:", err));
+      .then(() => console.log('✅ Problem marked as attempted'))
+      .catch((err) => console.error("Failed to mark problem as attempted:", err));
   };
 
   // Split lists

@@ -482,7 +482,7 @@ useEffect(() => {
         problem_id: currentQuestion.id,
         status: status,
         user_answer: notes,
-        time_spent_minutes: Math.round((currentQuestion.timeLimit * 60 - secondsLeft) / 60),
+        time_spent_minutes: Math.round(((currentQuestion.time_limit_minutes || 30) * 60 - secondsLeft) / 60),
         hints_used: hintsUsed,
         notes: notes
       });
@@ -589,7 +589,7 @@ useEffect(() => {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="sm" asChild>
-                <Link to="practice">
+                <Link to="/practice">
                   <ChevronLeft className="w-4 h-4 mr-1"/>Back to Practice
                 </Link>
               </Button>
@@ -637,7 +637,7 @@ useEffect(() => {
                       <CardTitle className="text-xl mb-2">{currentQuestion.title}</CardTitle>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <AlarmClock className="w-4 h-4" />
-                        <span>Suggested time: {currentQuestion.timeLimit} minutes</span>
+                        <span>Suggested time: {currentQuestion.time_limit_minutes} minutes</span>
                         <span>•</span>
                         <span>Asked at: {currentQuestion.companies.join(", ")}</span>
                       </div>
