@@ -11,7 +11,6 @@ import Practice from "./pages/Practice";
 import PracticeInterface from "./pages/PracticeInterface";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
-import SupabaseTestPage from "./pages/SupabaseTest";
 import Upgrade from "./pages/Upgrade";
 
 const queryClient = new QueryClient();
@@ -30,7 +29,6 @@ const App = () => (
             <Route path="/practice/interface" element={<PracticeInterface />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/upgrade" element={<Upgrade />} />
-            <Route path="/test" element={<SupabaseTestPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </HashRouter>
