@@ -10,6 +10,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { submissionService } from "@/services/submissionService";
+import { bookmarkService } from "@/services/bookmarkService";
 import { supabase } from "@/lib/supabase";
 import { listProblems, type DbProblem } from "@/services/problemService";
 
@@ -28,10 +29,12 @@ const Practice = () => {
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [subjectFilter, setSubjectFilter] = useState("all");
   const [industryFilter, setIndustryFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all"); // New: filter by status/bookmark
 
   // Data
   const [problems, setProblems] = useState<DbProblem[]>([]);
   const [submissions, setSubmissions] = useState<UserSubmission[]>([]);
+  const [bookmarkedProblemIds, setBookmarkedProblemIds] = useState<string[]>([]);
   const [submissionStats, setSubmissionStats] = useState({
     total: 0,
     solved: 0,
@@ -73,7 +76,7 @@ const Practice = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // Load user submissions + stats
+  // Load user submissions + stats + bookmarks
   const loadUserData = async () => {
     if (!user) return;
     try {
@@ -83,6 +86,9 @@ const Practice = () => {
 
       const stats = await submissionService.getSubmissionStats(user.id);
       setSubmissionStats(stats);
+
+      const bookmarks = await bookmarkService.getUserBookmarks(user.id);
+      setBookmarkedProblemIds(bookmarks);
     } catch (error) {
       console.error("Error loading user data:", error);
     } finally {
@@ -164,9 +170,48 @@ const Practice = () => {
       .catch((err) => console.error("Failed to mark problem as attempted:", err));
   };
 
+  // Handle bookmark toggle
+  const handleBookmarkToggle = async (e: React.MouseEvent, problemId: string) => {
+    e.stopPropagation(); // Prevent card click
+    if (!user) return;
+
+    try {
+      const isCurrentlyBookmarked = bookmarkedProblemIds.includes(problemId);
+
+      if (isCurrentlyBookmarked) {
+        // Optimistically update UI
+        setBookmarkedProblemIds(prev => prev.filter(id => id !== problemId));
+        await bookmarkService.removeBookmark(user.id, problemId);
+      } else {
+        // Optimistically update UI
+        setBookmarkedProblemIds(prev => [...prev, problemId]);
+        await bookmarkService.addBookmark(user.id, problemId);
+      }
+    } catch (error) {
+      console.error("Error toggling bookmark:", error);
+      // Revert on error by reloading
+      loadUserData();
+    }
+  };
+
+  // Check if problem is bookmarked
+  const isBookmarked = (problemId: string) => bookmarkedProblemIds.includes(problemId);
+
+  // Filter problems based on status filter
+  const filterProblemsByStatus = (problemList: DbProblem[]) => {
+    if (statusFilter === "bookmarked") {
+      return problemList.filter(p => isBookmarked(p.id));
+    }
+    return problemList;
+  };
+
   // Split lists
-  const freeProblems = problems.filter((p) => !p.is_premium);
-  const premiumProblems = problems.filter((p) => p.is_premium);
+  const allFreeProblems = problems.filter((p) => !p.is_premium);
+  const allPremiumProblems = problems.filter((p) => p.is_premium);
+
+  const freeProblems = filterProblemsByStatus(allFreeProblems);
+  const premiumProblems = filterProblemsByStatus(allPremiumProblems);
+
   const canAccessPremium = (user as any)?.subscription_tier === "premium";
 
   return (
@@ -275,7 +320,7 @@ const Practice = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
@@ -285,6 +330,21 @@ const Practice = () => {
                   className="pl-9"
                 />
               </div>
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Problems</SelectItem>
+                  <SelectItem value="bookmarked">
+                    <div className="flex items-center gap-2">
+                      <Star className="w-4 h-4" />
+                      Bookmarked
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
 
               <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
                 <SelectTrigger>
@@ -371,8 +431,13 @@ const Practice = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" className="flex-shrink-0">
-                          <Star className="w-4 h-4" />
+                        <Button
+                          variant={isBookmarked(problem.id) ? "default" : "outline"}
+                          size="sm"
+                          className="flex-shrink-0"
+                          onClick={(e) => handleBookmarkToggle(e, problem.id)}
+                        >
+                          <Star className={`w-4 h-4 ${isBookmarked(problem.id) ? 'fill-current' : ''}`} />
                         </Button>
                         <Button
                           variant={getButtonVariant(problem.id)}
@@ -443,8 +508,14 @@ const Practice = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" disabled={!canAccessPremium} className="flex-shrink-0">
-                          <Star className="w-4 h-4" />
+                        <Button
+                          variant={isBookmarked(problem.id) ? "default" : "outline"}
+                          size="sm"
+                          disabled={!canAccessPremium}
+                          className="flex-shrink-0"
+                          onClick={(e) => handleBookmarkToggle(e, problem.id)}
+                        >
+                          <Star className={`w-4 h-4 ${isBookmarked(problem.id) ? 'fill-current' : ''}`} />
                         </Button>
                         {canAccessPremium ? (
                           <Button
