@@ -12,6 +12,9 @@ import PracticeInterface from "./pages/PracticeInterface";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import Upgrade from "./pages/Upgrade";
+import About from "./pages/About";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +33,9 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/upgrade" element={<Upgrade />} />
             <Route path="*" element={<NotFound />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
           </Routes>
         </HashRouter>
       </TooltipProvider>
