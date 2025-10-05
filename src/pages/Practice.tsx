@@ -170,11 +170,13 @@ const Practice = () => {
   const canAccessPremium = (user as any)?.subscription_tier === "premium";
 
   return (
+    // will probably add the debug aspect to like and admin account in the near future
     <div className="min-h-screen bg-gradient-card">
       <Navbar />
 
       <div className="container mx-auto px-4 py-8">
-        {/* Debug */}
+
+        {/* Debug
         <Card className="mb-4 bg-yellow-50 border-yellow-200">
           <CardContent className="pt-4">
             <h3 className="font-semibold mb-2">🧪 Debug Test</h3>
@@ -197,7 +199,7 @@ const Practice = () => {
               </Button>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Header with Stats */}
         <div className="mb-8">
@@ -242,8 +244,8 @@ const Practice = () => {
               </Card>
             </div>
           </div>
-
-          {/* Interactive Practice Mode Banner */}
+          
+          {/* Interactive Practice Mode Banner (getting rid of this for the time being)
           <Card className="border-primary shadow-strong bg-gradient-primary text-white mb-6">
             <CardContent className="pt-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -261,7 +263,7 @@ const Practice = () => {
                 </Button>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
 
         {/* Filters */}
