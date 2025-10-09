@@ -1,5 +1,4 @@
 import React from 'react';
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, Settings, LogOut, BarChart3 } from "lucide-react";
+import { Settings, LogOut, BarChart3 } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { toast } from "sonner";
@@ -39,11 +38,9 @@ export const UserMenu: React.FC = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <div className="h-8 w-8 rounded-full bg-gradient-primary flex items-center justify-center text-white text-sm font-bold">
-            {getInitials(user.name)}
-          </div>
-        </Button>
+        <button className="relative h-12 w-12 rounded-full bg-black flex items-center justify-center text-white text-base font-bold hover:ring-2 hover:ring-black/30 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-black/40 shadow-md hover:shadow-lg hover:bg-gray-800">
+          {getInitials(user.name)}
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">

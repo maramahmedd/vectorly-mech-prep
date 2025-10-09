@@ -1,11 +1,11 @@
-// src/App.tsx (Fixed routing)
-import { Toaster } from "@/components/ui/toaster";
+// src/App.tsx
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ScrollToTop from "@/components/ScrollToTop";
+import LandingPage from "./pages/LandingPage";
 import Index from "./pages/Index";
 import Practice from "./pages/Practice";
 import PracticeInterface from "./pages/PracticeInterface";
@@ -22,20 +22,20 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
-        <Toaster />
         <Sonner />
         <HashRouter>
           <ScrollToTop />
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/home" element={<Index />} />
             <Route path="/practice" element={<Practice />} />
             <Route path="/practice/interface" element={<PracticeInterface />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/upgrade" element={<Upgrade />} />
-            <Route path="*" element={<NotFound />} />
             <Route path="/about" element={<About />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </HashRouter>
       </TooltipProvider>

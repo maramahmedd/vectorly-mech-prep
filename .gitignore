@@ -26,6 +26,13 @@ dist-ssr
 .supabase-bookmarks-migration.sql
 .HOW-TO-ADD-PROBLEMS.md
 
+# Backup directories
+backup-*/
+archive/
+
+# Documentation
+docs/
+
 #environment variables
 .env
 .env.local
