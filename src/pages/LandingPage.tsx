@@ -35,14 +35,14 @@ function ResponsiveDm1() {
   return (
     <div className="bg-[#fbfbfb] w-full">
       {/* Hero Section - Desktop12 */}
-      <div className="bg-white relative w-full overflow-hidden">
-        <div className="max-w-[1440px] mx-auto px-4 lg:px-[80px]">
+      <div className="bg-white relative w-full overflow-hidden border-b">
+        <div className="max-w-7xl mx-auto px-4 lg:px-16">
           {/* Navigation */}
-          <div className="flex items-center justify-between py-[30px] w-full">
+          <div className="flex items-center justify-between py-6 w-full">
             {/* Logo */}
-            <div className="flex items-center gap-[10px]">
+            <div className="flex items-center gap-2 lg:gap-3">
               <svg
-                className="w-[53px] h-[48px] shrink-0"
+                className="w-8 h-7 lg:w-12 lg:h-11 shrink-0"
                 fill="none"
                 preserveAspectRatio="none"
                 viewBox="0 0 53 48"
@@ -52,47 +52,47 @@ function ResponsiveDm1() {
                   fill="#090909"
                 />
               </svg>
-              <p className="font-['JetBrains_Mono:Regular',_sans-serif] font-normal text-[26px] text-black">
+              <p className="font-['JetBrains_Mono'] font-normal text-lg lg:text-2xl text-black">
                 Vectorly
               </p>
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex gap-[48px] items-center">
+            <nav className="hidden lg:flex gap-8 xl:gap-12 items-center">
               <a
                 href="#practice"
-                className="font-['Plus_Jakarta_Sans:SemiBold',_sans-serif] font-semibold text-[#020407] text-[14px] hover:text-black transition-colors"
+                className="font-semibold text-sm hover:text-black transition-colors"
               >
                 Practice
               </a>
               <a
                 href="#dashboard"
-                className="font-['Plus_Jakarta_Sans:SemiBold',_sans-serif] font-semibold text-[#020407] text-[14px] hover:text-black transition-colors"
+                className="font-semibold text-sm hover:text-black transition-colors"
               >
                 Dashboard
               </a>
               <a
                 href="#features"
-                className="font-['Plus_Jakarta_Sans:SemiBold',_sans-serif] font-semibold text-[#020407] text-[14px] hover:text-black transition-colors"
+                className="font-semibold text-sm hover:text-black transition-colors"
               >
                 Features
               </a>
               <a
                 href="#pricing"
-                className="font-['Plus_Jakarta_Sans:SemiBold',_sans-serif] font-semibold text-[#020407] text-[14px] hover:text-black transition-colors"
+                className="font-semibold text-sm hover:text-black transition-colors"
               >
                 Pricing
               </a>
               <a
                 href="#contact"
-                className="font-['Plus_Jakarta_Sans:SemiBold',_sans-serif] font-semibold text-[#020407] text-[14px] hover:text-black transition-colors"
+                className="font-semibold text-sm hover:text-black transition-colors"
               >
                 Contact
               </a>
             </nav>
 
             {/* Desktop CTA */}
-            <div className="hidden lg:flex gap-[32px] items-center">
+            <div className="hidden lg:flex gap-4 items-center">
               {loading ? (
                 <div className="w-8 h-8 rounded-full bg-gray-300 animate-pulse"></div>
               ) : user ? (
@@ -100,45 +100,85 @@ function ResponsiveDm1() {
               ) : (
                 <>
                   <AuthDialog defaultMode="login">
-                    <button className="flex items-center justify-center px-[24px] py-[12px] rounded-[50px] border border-[#010205] font-['Manrope:Bold',_sans-serif] font-bold text-[16px] text-[#010205] hover:bg-black hover:text-white transition-all">
+                    <button className="px-6 py-3 rounded-full border border-black font-bold text-sm hover:bg-black hover:text-white transition-all">
                       Sign In
                     </button>
                   </AuthDialog>
                   <AuthDialog defaultMode="signup">
-                    <button className="flex items-center justify-center px-[24px] py-[12px] rounded-[50px] bg-[#010205] font-['Manrope:Bold',_sans-serif] font-bold text-[16px] text-white hover:bg-gray-800 transition-all">
+                    <button className="px-6 py-3 rounded-full bg-black font-bold text-sm text-white hover:bg-gray-800 transition-all">
                       Get started
                     </button>
                   </AuthDialog>
                 </>
               )}
             </div>
+
+            {/* Mobile Menu Button */}
+            <button className="lg:hidden p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+              {mobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
+            </button>
           </div>
 
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="lg:hidden border-t py-4 space-y-4">
+              <a href="#practice" className="block py-2 font-semibold text-sm hover:text-black transition-colors">
+                Practice
+              </a>
+              <a href="#dashboard" className="block py-2 font-semibold text-sm hover:text-black transition-colors">
+                Dashboard
+              </a>
+              <a href="#features" className="block py-2 font-semibold text-sm hover:text-black transition-colors">
+                Features
+              </a>
+              <a href="#pricing" className="block py-2 font-semibold text-sm hover:text-black transition-colors">
+                Pricing
+              </a>
+              <a href="#contact" className="block py-2 font-semibold text-sm hover:text-black transition-colors">
+                Contact
+              </a>
+              {!user && (
+                <div className="flex flex-col gap-3 pt-4 border-t">
+                  <AuthDialog defaultMode="login">
+                    <button className="w-full px-6 py-3 rounded-full border border-black font-bold text-sm hover:bg-black hover:text-white transition-all">
+                      Sign In
+                    </button>
+                  </AuthDialog>
+                  <AuthDialog defaultMode="signup">
+                    <button className="w-full px-6 py-3 rounded-full bg-black font-bold text-sm text-white hover:bg-gray-800 transition-all">
+                      Get started
+                    </button>
+                  </AuthDialog>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Hero Content */}
-          <div className="grid lg:grid-cols-2 gap-8 items-center py-8 lg:py-16 min-h-[600px]">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center py-8 lg:py-16">
             {/* Left Side - Hero Text */}
-            <div className="flex flex-col gap-[48px] max-w-[700px]">
-              <div className="flex flex-col gap-[32px]">
-                <h1 className="font-['Plus_Jakarta_Sans:SemiBold',_sans-serif] font-semibold leading-[1.1] text-[#010205] text-[48px] lg:text-[72px] tracking-[-2.16px]">
-                  Master Mechanical Engineering Interview
-                  Success
-                </h1>
-              </div>
-              <p className="font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium leading-[1.8] text-[#878c91] text-[16px] max-w-[557px]">
-                The only platform designed specifically for ME
-                students and new grads. Practice real interview
-                questions, master essential theory, and land
-                your dream internship.
+            <div className="flex flex-col gap-8 lg:gap-12">
+              <h1 className="font-semibold leading-tight text-4xl sm:text-5xl lg:text-6xl xl:text-7xl tracking-tight">
+                Master Mechanical Engineering Interview Success
+              </h1>
+
+              <p className="font-medium leading-relaxed text-gray-600 text-base lg:text-lg max-w-xl">
+                The only platform designed specifically for ME students and new grads. Practice real interview questions, master essential theory, and land your dream internship.
               </p>
-              <div className="flex gap-[56px] items-center">
+
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                 {userState === 'not_logged_in' ? (
                   <AuthDialog defaultMode="signup">
-                    <button className="bg-[#010205] flex gap-[42px] items-center justify-center px-[32px] py-[16px] rounded-[70px] hover:bg-gray-800 transition-colors">
-                      <p className="font-['Plus_Jakarta_Sans:Bold',_sans-serif] font-bold leading-[1.4] text-[16px] text-white tracking-[-0.32px]">
+                    <button className="w-full sm:w-auto bg-black flex gap-6 items-center justify-center px-8 py-4 rounded-full hover:bg-gray-800 transition-colors">
+                      <span className="font-bold text-sm text-white">
                         Start practicing
-                      </p>
+                      </span>
                       <svg
-                        className="size-6"
+                        className="w-5 h-5"
                         fill="none"
                         viewBox="0 0 24 24"
                       >
@@ -162,13 +202,13 @@ function ResponsiveDm1() {
                 ) : (
                   <button
                     onClick={handleStartPracticing}
-                    className="bg-[#010205] flex gap-[42px] items-center justify-center px-[32px] py-[16px] rounded-[70px] hover:bg-gray-800 transition-colors"
+                    className="w-full sm:w-auto bg-black flex gap-6 items-center justify-center px-8 py-4 rounded-full hover:bg-gray-800 transition-colors"
                   >
-                    <p className="font-['Plus_Jakarta_Sans:Bold',_sans-serif] font-bold leading-[1.4] text-[16px] text-white tracking-[-0.32px]">
+                    <span className="font-bold text-sm text-white">
                       Start practicing
-                    </p>
+                    </span>
                     <svg
-                      className="size-6"
+                      className="w-5 h-5"
                       fill="none"
                       viewBox="0 0 24 24"
                     >
@@ -193,120 +233,79 @@ function ResponsiveDm1() {
             </div>
 
             {/* Right Side - Exact Figma Graphics */}
-            <div className="relative hidden lg:block">
+            <div className="relative hidden md:block">
               <Group427320839 />
             </div>
           </div>
 
           {/* Universities Badge */}
-          <div className="flex flex-col sm:flex-row gap-[32px] lg:gap-[64px] items-start sm:items-center pb-12 lg:pb-16">
-            <p className="font-['Plus_Jakarta_Sans:SemiBold',_sans-serif] font-semibold leading-[1.6] text-[#010205] text-[14px] max-w-[206px]">
-              Adopted by top universities
+          <div className="flex flex-col sm:flex-row gap-6 lg:gap-12 items-start sm:items-center pb-12 lg:pb-16">
+            <p className="font-semibold text-sm max-w-xs leading-relaxed">
+              Questions asked at companies like:
             </p>
-            <div className="flex gap-[27.93px] items-start">
-              <div className="h-[33.324px] w-[108.303px] bg-gray-300 rounded opacity-50" />
-              <div className="h-[33.324px] w-[114.552px] bg-gray-300 rounded opacity-50" />
-              <div className="h-[33.324px] w-[98.584px] bg-gray-300 rounded opacity-50" />
+            <div className="flex flex-wrap gap-6 items-center">
+              <div className="h-8 w-24 bg-gray-300 rounded opacity-50" />
+              <div className="h-8 w-28 bg-gray-300 rounded opacity-50" />
+              <div className="h-8 w-24 bg-gray-300 rounded opacity-50" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Sample Interview Questions Section */}
-      <div className="bg-[#f8f6f6] w-full px-4 sm:px-8 lg:px-32 py-12 lg:py-20">
-        <div className="max-w-[1440px] mx-auto">
-          <h2 className="font-['Plus_Jakarta_Sans:SemiBold',_sans-serif] font-semibold leading-[1.3] text-[#010205] text-[32px] sm:text-[40px] lg:text-[48px] tracking-[-1.44px] text-center mb-8">
+      <div className="bg-[#f8f6f6] w-full px-4 sm:px-8 lg:px-24 py-12 lg:py-20">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="font-semibold text-3xl sm:text-4xl lg:text-5xl text-center mb-12 tracking-tight">
             Sample interview questions
           </h2>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
             {/* Question Card 1 */}
-            <div className="bg-white p-6 lg:p-8 rounded-[20px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] space-y-6">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="bg-[#f34500] px-3 py-2 rounded-[4px]">
-                  <p className="font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium text-[14px] text-white">
-                    Hard
-                  </p>
+            <div className="bg-white p-6 lg:p-8 rounded-3xl shadow-sm space-y-5">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="bg-[#f34500] text-white text-xs font-medium px-3 py-2 rounded">
+                  Hard
                 </div>
-                <p className="font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium text-[14px]">
-                  <span className="text-[#252525]">
-                    Asked at:
-                  </span>
-                  <span className="text-[#878c91]">
-                    {" "}
-                    Boeing, SpaceX
-                  </span>
+                <p className="text-xs">
+                  <span className="text-gray-900">Asked at:</span>
+                  <span className="text-gray-500"> Boeing, SpaceX</span>
                 </p>
               </div>
-              <h3 className="font-['Plus_Jakarta_Sans:SemiBold',_sans-serif] font-semibold leading-[1.5] text-[#010205] text-[22px] lg:text-[26px] tracking-[-0.78px]">
+
+              <h3 className="text-xl lg:text-2xl font-semibold tracking-tight">
                 Simply Supported Beam
               </h3>
-              <div className="flex flex-wrap gap-4">
-                <span className="bg-white border border-[#c5c5c5] px-3 py-2 rounded-[4px] font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium text-[#7a7a7a] text-[14px]">
+
+              <div className="flex flex-wrap gap-3">
+                <span className="border border-gray-300 text-gray-500 text-xs font-medium px-3 py-2 rounded">
                   Solid mechanics
                 </span>
-                <span className="bg-white border border-[#c5c5c5] px-3 py-2 rounded-[4px] font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium text-[#7a7a7a] text-[14px]">
+                <span className="border border-gray-300 text-gray-500 text-xs font-medium px-3 py-2 rounded">
                   Product design
                 </span>
-                <span className="bg-white border border-[#c5c5c5] px-3 py-2 rounded-[4px] font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium text-[#7a7a7a] text-[14px]">
+                <span className="border border-gray-300 text-gray-500 text-xs font-medium px-3 py-2 rounded">
                   Materials
                 </span>
               </div>
-              <div className="flex items-center justify-between gap-4">
-                <p className="font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium leading-[1.6] text-[#878c91] text-[14px] flex-1">
-                  A simply supported beam of length 5 m carries
-                  a point load of 10 N at midspan. Calculate the
-                  maximum deflection.
+
+              <div className="flex items-center gap-5">
+                <p className="text-xs text-gray-500 flex-1 line-clamp-3">
+                  A simply supported beam of length 5 m carries a point load of 10 N at midspan. Calculate the maximum deflection.
                 </p>
                 {userState === 'not_logged_in' ? (
                   <AuthDialog defaultMode="signup">
-                    <button className="bg-[#010205] p-4 rounded-[70px] shrink-0 hover:bg-gray-800 transition-colors">
-                      <svg
-                        className="size-6"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M5 12H19"
-                          stroke="white"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                        />
-                        <path
-                          d="M12 5L19 12L12 19"
-                          stroke="white"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                        />
+                    <button className="bg-black rounded-full p-3 hover:bg-gray-800 transition-colors flex-shrink-0">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24">
+                        <path d="M5 12H19" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                        <path d="M12 5L19 12L12 19" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                       </svg>
                     </button>
                   </AuthDialog>
                 ) : (
-                  <button
-                    onClick={handleStartPracticing}
-                    className="bg-[#010205] p-4 rounded-[70px] shrink-0 hover:bg-gray-800 transition-colors"
-                  >
-                    <svg
-                      className="size-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        d="M5 12H19"
-                        stroke="white"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                      />
-                      <path
-                        d="M12 5L19 12L12 19"
-                        stroke="white"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                      />
+                  <button onClick={handleStartPracticing} className="bg-black rounded-full p-3 hover:bg-gray-800 transition-colors flex-shrink-0">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24">
+                      <path d="M5 12H19" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                      <path d="M12 5L19 12L12 19" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                     </svg>
                   </button>
                 )}
@@ -314,92 +313,51 @@ function ResponsiveDm1() {
             </div>
 
             {/* Question Card 2 */}
-            <div className="bg-white p-6 lg:p-8 rounded-[20px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] space-y-6">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="bg-[#d1a106] px-3 py-2 rounded-[4px]">
-                  <p className="font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium text-[14px] text-white">
-                    Medium
-                  </p>
+            <div className="bg-white p-6 lg:p-8 rounded-3xl shadow-sm space-y-5">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="bg-[#d1a106] text-white text-xs font-medium px-3 py-2 rounded">
+                  Medium
                 </div>
-                <p className="font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium text-[14px]">
-                  <span className="text-[#252525]">
-                    Asked at:
-                  </span>
-                  <span className="text-[#878c91]">
-                    {" "}
-                    Boeing, SpaceX
-                  </span>
+                <p className="text-xs">
+                  <span className="text-gray-900">Asked at:</span>
+                  <span className="text-gray-500"> Boeing, SpaceX</span>
                 </p>
               </div>
-              <h3 className="font-['Plus_Jakarta_Sans:SemiBold',_sans-serif] font-semibold leading-[1.5] text-[#010205] text-[22px] lg:text-[26px] tracking-[-0.78px]">
+
+              <h3 className="text-xl lg:text-2xl font-semibold tracking-tight">
                 Simply Supported Beam
               </h3>
-              <div className="flex flex-wrap gap-4">
-                <span className="bg-white border border-[#c5c5c5] px-3 py-2 rounded-[4px] font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium text-[#7a7a7a] text-[14px]">
+
+              <div className="flex flex-wrap gap-3">
+                <span className="border border-gray-300 text-gray-500 text-xs font-medium px-3 py-2 rounded">
                   Solid mechanics
                 </span>
-                <span className="bg-white border border-[#c5c5c5] px-3 py-2 rounded-[4px] font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium text-[#7a7a7a] text-[14px]">
+                <span className="border border-gray-300 text-gray-500 text-xs font-medium px-3 py-2 rounded">
                   Product design
                 </span>
-                <span className="bg-white border border-[#c5c5c5] px-3 py-2 rounded-[4px] font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium text-[#7a7a7a] text-[14px]">
+                <span className="border border-gray-300 text-gray-500 text-xs font-medium px-3 py-2 rounded">
                   Materials
                 </span>
               </div>
-              <div className="flex items-center justify-between gap-4">
-                <p className="font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium leading-[1.6] text-[#878c91] text-[14px] flex-1">
-                  A simply supported beam of length 5 m carries
-                  a point load of 10 N at midspan. Calculate the
-                  maximum deflection.
+
+              <div className="flex items-center gap-5">
+                <p className="text-xs text-gray-500 flex-1 line-clamp-3">
+                  A simply supported beam of length 5 m carries a point load of 10 N at midspan. Calculate the maximum deflection.
                 </p>
                 {userState === 'not_logged_in' ? (
                   <AuthDialog defaultMode="signup">
-                    <button className="bg-[#010205] p-4 rounded-[70px] shrink-0 hover:bg-gray-800 transition-colors">
-                      <svg
-                        className="size-6"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M5 12H19"
-                          stroke="white"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                        />
-                        <path
-                          d="M12 5L19 12L12 19"
-                          stroke="white"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                        />
+                    <button className="bg-black rounded-full p-3 hover:bg-gray-800 transition-colors flex-shrink-0">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24">
+                        <path d="M5 12H19" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                        <path d="M12 5L19 12L12 19" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                       </svg>
                     </button>
                   </AuthDialog>
                 ) : (
-                  <button
-                    onClick={handleStartPracticing}
-                    className="bg-[#010205] p-4 rounded-[70px] shrink-0 hover:bg-gray-800 transition-colors"
-                  >
-                    <svg
-                      className="size-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        d="M5 12H19"
-                        stroke="white"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                      />
-                      <path
-                        d="M12 5L19 12L12 19"
-                        stroke="white"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                      />
+                  <button onClick={handleStartPracticing} className="bg-black rounded-full p-3 hover:bg-gray-800 transition-colors flex-shrink-0">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24">
+                      <path d="M5 12H19" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                      <path d="M12 5L19 12L12 19" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                     </svg>
                   </button>
                 )}
@@ -410,409 +368,193 @@ function ResponsiveDm1() {
       </div>
 
       {/* Pricing Section */}
-      <div
-        id="pricing"
-        className="bg-[#bfbfbf] flex flex-col items-center justify-center h-[795px] relative shrink-0 w-full"
-      >
-        <div className="grid-cols-[max-content] grid-rows-[max-content] inline-grid leading-[0] place-items-start relative">
-          {/* Table Background */}
-          <div className="[grid-area:1_/_1] bg-white h-[643.864px] rounded-[35.847px] w-[785.872px]" />
+      <div id="pricing" className="bg-[#bfbfbf] w-full px-4 sm:px-8 lg:px-24 py-12 lg:py-20">
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-white rounded-3xl overflow-hidden shadow-lg">
+            <div className="grid grid-cols-1 lg:grid-cols-2">
+              {/* Free Plan */}
+              <div className="p-8 lg:p-12 flex flex-col">
+                {/* Invisible spacer to match "MOST POPULAR" badge height on mobile */}
+                <div className="h-8 mb-4 lg:block hidden" />
 
-          {/* Free Plan */}
-          <div className="[grid-area:1_/_1] grid-cols-[max-content] grid-rows-[max-content] inline-grid ml-[55.149px] mt-[55.149px] place-items-start relative">
-            {/* Title and Price */}
-            <div className="[grid-area:1_/_1] h-[121.328px] ml-0 mt-[90.996px] overflow-clip relative w-[319.864px]">
-              <p className="absolute font-['Avenir:Heavy',_sans-serif] leading-[normal] left-0 not-italic text-[#231d4f] text-[38.604px] text-nowrap top-[calc(50%-60.664px)] whitespace-pre">
-                Free
-              </p>
-            </div>
-            <div className="[grid-area:1_/_1] h-[63.421px] ml-0 mt-0 not-italic overflow-clip relative text-nowrap w-[179.234px] whitespace-pre">
-              <p className="absolute font-['Avenir:Heavy',_sans-serif] leading-[63.421px] left-0 text-[#231d4f] text-[49.634px] top-[calc(50%-31.711px)]">
-                $0
-              </p>
-              <p className="absolute font-['Avenir:Medium',_sans-serif] leading-[normal] left-[56.92%] text-[#848199] text-[23.438px] top-[calc(50%-8.272px)]">
-                /month
-              </p>
-            </div>
+                <div className="flex-1 space-y-8">
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-6 lg:gap-8">
+                      <p className="text-4xl lg:text-5xl font-black text-[#231d4f]">$0</p>
+                      <p className="text-xl font-medium text-[#848199]">/month</p>
+                    </div>
+                    <h3 className="text-3xl font-black text-[#231d4f]">Free</h3>
+                  </div>
 
-            {/* List Items */}
-            <div className="[grid-area:1_/_1] h-[28.953px] ml-0 mt-[223.353px] overflow-clip relative w-[285.396px]">
-              <div className="absolute bottom-0 left-0 right-[90.34%] top-[4.76%]">
-                <svg
-                  className="block size-full"
-                  fill="none"
-                  preserveAspectRatio="none"
-                  viewBox="0 0 28 28"
-                >
-                  <circle
-                    cx="14"
-                    cy="14"
-                    r="14"
-                    fill="#5243C2"
-                    opacity="0.103693"
-                  />
-                  <path
-                    d="M19 10L12 17L9 14"
-                    stroke="#5243C2"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <p className="absolute font-['Avenir:Medium',_sans-serif] leading-[normal] left-[14.49%] not-italic text-[#848199] text-[20.681px] top-[calc(50%-14.477px)]">
-                20 problems per month
-              </p>
-            </div>
-            <div className="[grid-area:1_/_1] h-[28.953px] ml-0 mt-[266.094px] overflow-clip relative w-[285.396px]">
-              <div className="absolute bottom-0 left-0 right-[90.34%] top-[4.76%]">
-                <svg
-                  className="block size-full"
-                  fill="none"
-                  preserveAspectRatio="none"
-                  viewBox="0 0 28 28"
-                >
-                  <circle
-                    cx="14"
-                    cy="14"
-                    r="14"
-                    fill="#5243C2"
-                    opacity="0.103693"
-                  />
-                  <path
-                    d="M19 10L12 17L9 14"
-                    stroke="#5243C2"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <p className="absolute font-['Avenir:Medium',_sans-serif] leading-[normal] left-[14.49%] not-italic text-[#848199] text-[20.681px] top-[calc(50%-14.477px)]">
-                Basic progress tracking
-              </p>
-            </div>
-            <div className="[grid-area:1_/_1] h-[28.953px] ml-0 mt-[308.834px] overflow-clip relative w-[285.396px]">
-              <div className="absolute bottom-0 left-0 right-[90.34%] top-[4.76%]">
-                <svg
-                  className="block size-full"
-                  fill="none"
-                  preserveAspectRatio="none"
-                  viewBox="0 0 28 28"
-                >
-                  <circle
-                    cx="14"
-                    cy="14"
-                    r="14"
-                    fill="#5243C2"
-                    opacity="0.103693"
-                  />
-                  <path
-                    d="M19 10L12 17L9 14"
-                    stroke="#5243C2"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <p className="absolute font-['Avenir:Medium',_sans-serif] leading-[normal] left-[14.49%] not-italic text-[#848199] text-[20.681px] top-[calc(50%-14.477px)]">
-                Community access
-              </p>
-            </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 28 28">
+                        <circle cx="14" cy="14" r="14" fill="#5243C2" opacity="0.1" />
+                        <path d="M19 10L12 17L9 14" stroke="#5243C2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <p className="text-lg font-medium text-[#848199]">20 problems per month</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 28 28">
+                        <circle cx="14" cy="14" r="14" fill="#5243C2" opacity="0.1" />
+                        <path d="M19 10L12 17L9 14" stroke="#5243C2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <p className="text-lg font-medium text-[#848199]">Basic progress tracking</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 28 28">
+                        <circle cx="14" cy="14" r="14" fill="#5243C2" opacity="0.1" />
+                        <path d="M19 10L12 17L9 14" stroke="#5243C2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <p className="text-lg font-medium text-[#848199]">Community access</p>
+                    </div>
+                  </div>
+                </div>
 
-            {/* Button */}
-            <div className="[grid-area:1_/_1] h-[62.043px] ml-0 mt-[485.311px] overflow-clip relative w-[285.396px]">
-              <div className="absolute bg-[#010101] inset-0 opacity-10 rounded-[33.089px]" />
-              <p className="absolute font-['Avenir:Heavy',_sans-serif] leading-[normal] left-[28.5%] not-italic text-[#010101] text-[20.681px] text-center text-nowrap top-[calc(50%-13.098px)] whitespace-pre">
-                Current plan
-              </p>
-            </div>
-          </div>
-
-          {/* Premium Plan */}
-          <div className="[grid-area:1_/_1] grid-cols-[max-content] grid-rows-[max-content] inline-grid ml-[394.315px] mt-0 place-items-start relative">
-            {/* Black Background */}
-            <div className="[grid-area:1_/_1] bg-black h-[643.864px] ml-0 mt-0 rounded-[35.847px] w-[391.557px]" />
-
-            {/* Most Popular Badge */}
-            <div className="[grid-area:1_/_1] h-[37.225px] ml-[208.187px] mt-[13.787px] overflow-clip relative w-[166.826px]">
-              <div className="absolute bg-[#99ea48] inset-0 rounded-[18.613px]" />
-              <p className="absolute font-['Avenir:Heavy',_sans-serif] leading-[normal] left-[13.22%] not-italic text-[#1e1e1e] text-[13.787px] text-center text-nowrap top-[calc(50%-8.962px)] tracking-[1.1489px] whitespace-pre">
-                MOST POPULAR
-              </p>
-            </div>
-
-            {/* Title */}
-            <div className="[grid-area:1_/_1] box-border flex gap-[13.787px] items-center justify-center ml-[41.362px] mt-[146.145px] overflow-clip relative">
-              <p className="font-['Avenir:Heavy',_sans-serif] leading-[normal] not-italic text-[38.604px] text-nowrap text-white whitespace-pre">
-                Premium
-              </p>
-            </div>
-
-            {/* Price */}
-            <div className="[grid-area:1_/_1] h-[63.421px] ml-[41.362px] mt-[55.149px] not-italic overflow-clip relative text-nowrap text-white w-[209.566px] whitespace-pre">
-              <p className="absolute font-['Avenir:Heavy',_sans-serif] leading-[63.421px] left-0 text-[49.634px] top-[calc(50%-31.711px)]">
-                $30
-              </p>
-              <p className="absolute font-['Avenir:Medium',_sans-serif] leading-[normal] left-[63.16%] text-[23.438px] top-[calc(50%-8.272px)]">
-                /month
-              </p>
-            </div>
-
-            {/* List Items */}
-            <div className="[grid-area:1_/_1] h-[28.953px] ml-[41.362px] mt-[257.564px] overflow-clip relative w-[285.396px]">
-              <div className="absolute bottom-0 left-0 right-[90.34%] top-[4.76%]">
-                <svg
-                  className="block size-full"
-                  fill="none"
-                  preserveAspectRatio="none"
-                  viewBox="0 0 28 28"
-                >
-                  <circle
-                    cx="14"
-                    cy="14"
-                    r="14"
-                    fill="white"
-                    opacity="0.1"
-                  />
-                  <path
-                    d="M19 10L12 17L9 14"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <p className="absolute font-['Avenir:Medium',_sans-serif] leading-[normal] left-[14.49%] not-italic text-[20.681px] text-white top-[calc(50%-14.477px)]">
-                Unlimited problems
-              </p>
-            </div>
-            <div className="[grid-area:1_/_1] h-[28.953px] ml-[41.362px] mt-[300.305px] overflow-clip relative w-[285.396px]">
-              <div className="absolute bottom-0 left-0 right-[90.34%] top-[4.76%]">
-                <svg
-                  className="block size-full"
-                  fill="none"
-                  preserveAspectRatio="none"
-                  viewBox="0 0 28 28"
-                >
-                  <circle
-                    cx="14"
-                    cy="14"
-                    r="14"
-                    fill="white"
-                    opacity="0.1"
-                  />
-                  <path
-                    d="M19 10L12 17L9 14"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <p className="absolute font-['Avenir:Medium',_sans-serif] leading-[normal] left-[14.49%] not-italic text-[20.681px] text-white top-[calc(50%-14.477px)]">
-                Advanced analytics
-              </p>
-            </div>
-            <div className="[grid-area:1_/_1] h-[28.953px] ml-[41.362px] mt-[343.046px] overflow-clip relative w-[285.396px]">
-              <div className="absolute bottom-0 left-0 right-[90.34%] top-[4.76%]">
-                <svg
-                  className="block size-full"
-                  fill="none"
-                  preserveAspectRatio="none"
-                  viewBox="0 0 28 28"
-                >
-                  <circle
-                    cx="14"
-                    cy="14"
-                    r="14"
-                    fill="white"
-                    opacity="0.1"
-                  />
-                  <path
-                    d="M19 10L12 17L9 14"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <p className="absolute font-['Avenir:Medium',_sans-serif] leading-[normal] left-[14.49%] not-italic text-[20.681px] text-white top-[calc(50%-14.477px)]">
-                Industry-specific filters
-              </p>
-            </div>
-            <div className="[grid-area:1_/_1] h-[28.953px] ml-[41.362px] mt-[428.783px] overflow-clip relative w-[285.396px]">
-              <div className="absolute bottom-0 left-0 right-[90.34%] top-[4.76%]">
-                <svg
-                  className="block size-full"
-                  fill="none"
-                  preserveAspectRatio="none"
-                  viewBox="0 0 28 28"
-                >
-                  <circle
-                    cx="14"
-                    cy="14"
-                    r="14"
-                    fill="white"
-                    opacity="0.1"
-                  />
-                  <path
-                    d="M19 10L12 17L9 14"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <p className="absolute font-['Avenir:Medium',_sans-serif] leading-[normal] left-[14.49%] not-italic text-[20.681px] text-white top-[calc(50%-14.477px)]">
-                Theory deep-dives
-              </p>
-            </div>
-            <div className="[grid-area:1_/_1] h-[28.953px] ml-[41.362px] mt-[386.043px] overflow-clip relative w-[285.396px]">
-              <div className="absolute bottom-0 left-0 right-[90.34%] top-[4.76%]">
-                <svg
-                  className="block size-full"
-                  fill="none"
-                  preserveAspectRatio="none"
-                  viewBox="0 0 28 28"
-                >
-                  <circle
-                    cx="14"
-                    cy="14"
-                    r="14"
-                    fill="white"
-                    opacity="0.1"
-                  />
-                  <path
-                    d="M19 10L12 17L9 14"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <p className="absolute font-['Avenir:Medium',_sans-serif] leading-[normal] left-[14.49%] not-italic text-[20.681px] text-white top-[calc(50%-14.477px)]">
-                1-on-1 mentorship
-              </p>
-            </div>
-
-            {/* Button */}
-            <div className="[grid-area:1_/_1] h-[62.043px] ml-[41.362px] mt-[540.46px] overflow-clip relative w-[319.864px]">
-              <AuthDialog defaultMode="signup">
-                <button className="absolute bg-white inset-0 rounded-[33.089px] hover:bg-gray-100 transition-colors">
-                  <p className="font-['Avenir:Heavy',_sans-serif] leading-[normal] not-italic text-[20.681px] text-black text-center text-nowrap">
-                    Choose plan
-                  </p>
+                <button className="w-full py-4 relative rounded-3xl text-lg font-black text-black text-center mt-8">
+                  <div className="absolute bg-black inset-0 opacity-10 rounded-3xl" />
+                  <span className="relative">Current plan</span>
                 </button>
-              </AuthDialog>
+              </div>
+
+              {/* Premium Plan */}
+              <div className="bg-black p-8 lg:p-12 flex flex-col">
+                <div className="flex justify-end h-8 mb-4">
+                  <span className="bg-[#99ea48] text-black text-xs font-black px-5 py-2 rounded-2xl tracking-wider h-fit">
+                    MOST POPULAR
+                  </span>
+                </div>
+
+                <div className="flex-1 space-y-8">
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-6 lg:gap-8 text-white">
+                      <p className="text-4xl lg:text-5xl font-black">$30</p>
+                      <p className="text-xl font-medium">/month</p>
+                    </div>
+                    <h3 className="text-3xl font-black text-white">Premium</h3>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 28 28">
+                        <circle cx="14" cy="14" r="14" fill="white" opacity="0.1" />
+                        <path d="M19 10L12 17L9 14" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <p className="text-lg font-medium text-white">Unlimited problems</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 28 28">
+                        <circle cx="14" cy="14" r="14" fill="white" opacity="0.1" />
+                        <path d="M19 10L12 17L9 14" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <p className="text-lg font-medium text-white">Advanced analytics</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 28 28">
+                        <circle cx="14" cy="14" r="14" fill="white" opacity="0.1" />
+                        <path d="M19 10L12 17L9 14" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <p className="text-lg font-medium text-white">Industry-specific filters</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 28 28">
+                        <circle cx="14" cy="14" r="14" fill="white" opacity="0.1" />
+                        <path d="M19 10L12 17L9 14" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <p className="text-lg font-medium text-white">Theory deep-dives</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 28 28">
+                        <circle cx="14" cy="14" r="14" fill="white" opacity="0.1" />
+                        <path d="M19 10L12 17L9 14" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <p className="text-lg font-medium text-white">1-on-1 mentorship</p>
+                    </div>
+                  </div>
+                </div>
+
+                <AuthDialog defaultMode="signup">
+                  <button className="w-full py-4 bg-white rounded-3xl text-lg font-black text-black hover:bg-gray-100 transition-colors text-center mt-8">
+                    Choose plan
+                  </button>
+                </AuthDialog>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Why Vectorly Works Section */}
-      <div
-        id="features"
-        className="bg-neutral-50 w-full px-4 sm:px-8 lg:px-20 py-12 lg:py-20"
-      >
-        <div className="max-w-[1440px] mx-auto">
-          <div className="text-center mb-12 lg:mb-20">
-            <h2 className="font-['Plus_Jakarta_Sans:SemiBold',_sans-serif] font-semibold leading-[1.3] text-[#010205] text-[32px] sm:text-[40px] lg:text-[48px] tracking-[-1.44px] mb-6">
+      <div id="features" className="bg-neutral-50 w-full px-4 sm:px-8 lg:px-16 py-12 lg:py-20">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12 lg:mb-16 max-w-3xl mx-auto">
+            <h2 className="font-semibold text-3xl sm:text-4xl lg:text-5xl mb-4 tracking-tight">
               Why Vectorly works
             </h2>
-            <p className="font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium leading-[1.8] text-[#878c91] text-[16px] lg:text-[21px] max-w-[846px] mx-auto">
-              Unlike generic coding platforms, we understand the
-              unique challenges of mechanical engineering
-              interviews.
+            <p className="text-lg text-gray-600 leading-relaxed">
+              Unlike generic coding platforms, we understand the unique challenges of mechanical engineering interviews.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Feature 1 - Import Contacts Icon */}
-            <div className="bg-white p-8 rounded-[20px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] space-y-6 text-center">
+            {/* Feature 1 */}
+            <div className="bg-white p-8 rounded-3xl shadow-sm space-y-5">
               <div className="flex justify-center">
-                <svg
-                  className="size-12"
-                  viewBox="0 0 24 24"
-                  fill="#1C1B1F"
-                >
-                  <path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/>
-                  <path d="M17.5 10.5c.88 0 1.73.09 2.5.26V9.24c-.79-.15-1.64-.24-2.5-.24-.69 0-1.52.08-2.3.19v1.51c.72-.11 1.54-.2 2.3-.2zM15.2 13.2v1.5c.76-.11 1.58-.2 2.3-.2.88 0 1.73.09 2.5.26V13.24c-.79-.15-1.64-.24-2.5-.24-.69 0-1.52.08-2.3.2zM17.5 16.5c-.88 0-1.73.09-2.5.26V15.24c.79-.15 1.64-.24 2.5-.24.69 0 1.52.08 2.3.19v1.51c-.72-.11-1.54-.2-2.3-.2z"/>
+                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                 </svg>
               </div>
-              <h3 className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] font-normal leading-[1.5] text-[#010205] text-[20px] lg:text-[22px] tracking-[-0.66px]">
+              <h3 className="text-xl font-normal text-center tracking-tight leading-snug">
                 Comprehensive Problem Bank
               </h3>
-              <p className="font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium leading-[1.6] text-[#373737] text-[14px]">
-                Crowdsourced questions from real mechanical
-                engineering interviews across all industries.
+              <p className="text-xs text-gray-700 text-center leading-relaxed">
+                Crowdsourced questions from real mechanical engineering interviews across all industries.
               </p>
             </div>
 
-            {/* Feature 2 - Adjust/Target Icon */}
-            <div className="bg-white p-8 rounded-[20px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] space-y-6 text-center">
+            {/* Feature 2 */}
+            <div className="bg-white p-8 rounded-3xl shadow-sm space-y-5">
               <div className="flex justify-center">
-                <svg
-                  className="size-12"
-                  viewBox="0 0 24 24"
-                  fill="#1C1B1F"
-                >
-                  <path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10 10-4.49 10-10S17.51 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3-8c0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3 3 1.34 3 3z"/>
+                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                 </svg>
               </div>
-              <h3 className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] font-normal leading-[1.5] text-[#010205] text-[20px] lg:text-[22px] tracking-[-0.66px]">
+              <h3 className="text-xl font-normal text-center tracking-tight leading-snug">
                 Theory-Linked Learning
               </h3>
-              <p className="font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium leading-[1.6] text-[#373737] text-[14px]">
-                Every problem connects to essential theory,
-                helping you understand the 'why' behind
-                solutions.
+              <p className="text-xs text-gray-700 text-center leading-relaxed">
+                Every problem connects to essential theory, helping you understand the 'why' behind solutions.
               </p>
             </div>
 
-            {/* Feature 3 - Trending Up Icon */}
-            <div className="bg-white p-8 rounded-[20px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] space-y-6 text-center">
+            {/* Feature 3 */}
+            <div className="bg-white p-8 rounded-3xl shadow-sm space-y-5">
               <div className="flex justify-center">
-                <svg
-                  className="size-12"
-                  viewBox="0 0 24 24"
-                  fill="#1C1B1F"
-                >
-                  <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
                 </svg>
               </div>
-              <h3 className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] font-normal leading-[1.5] text-[#010205] text-[20px] lg:text-[22px] tracking-[-0.66px]">
+              <h3 className="text-xl font-normal text-center tracking-tight leading-snug">
                 Industry-Specific Practice
               </h3>
-              <p className="font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium leading-[1.6] text-[#373737] text-[14px]">
-                Filter by automotive, aerospace, energy, and
-                other ME specializations.
+              <p className="text-xs text-gray-700 text-center leading-relaxed">
+                Filter by automotive, aerospace, energy, and other ME specializations.
               </p>
             </div>
 
-            {/* Feature 4 - Group Icon */}
-            <div className="bg-white p-8 rounded-[20px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] space-y-6 text-center">
+            {/* Feature 4 */}
+            <div className="bg-white p-8 rounded-3xl shadow-sm space-y-5">
               <div className="flex justify-center">
-                <svg
-                  className="size-12"
-                  viewBox="0 0 24 24"
-                  fill="#1C1B1F"
-                >
-                  <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
                 </svg>
               </div>
-              <h3 className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] font-normal leading-[1.5] text-[#010205] text-[20px] lg:text-[22px] tracking-[-0.66px]">
+              <h3 className="text-xl font-normal text-center tracking-tight leading-snug">
                 Community-Driven
               </h3>
-              <p className="font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium leading-[1.6] text-[#373737] text-[14px]">
-                Real interview questions contributed by students
-                and professionals in the field.
+              <p className="text-xs text-gray-700 text-center leading-relaxed">
+                Real interview questions contributed by students and professionals in the field.
               </p>
             </div>
           </div>
@@ -820,209 +562,142 @@ function ResponsiveDm1() {
       </div>
 
       {/* Testimonials Section */}
-      <div className="bg-[#bfbfbf] w-full px-4 sm:px-8 lg:px-20 py-12 lg:py-20">
-        <div className="max-w-[1440px] mx-auto">
-          <h2 className="font-['Plus_Jakarta_Sans:SemiBold',_sans-serif] font-semibold leading-[1.3] text-[#010205] text-[32px] sm:text-[40px] lg:text-[48px] tracking-[-1.44px] text-center mb-12 lg:mb-20">
+      <div className="bg-[#bfbfbf] w-full px-4 sm:px-8 lg:px-16 py-12 lg:py-20">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="font-semibold text-3xl sm:text-4xl lg:text-5xl text-center mb-12 tracking-tight">
             What students say
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Testimonial 1 */}
-            <div className="bg-white p-8 rounded-[20px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] space-y-8">
-              <div className="space-y-6">
+            <div className="bg-white p-8 rounded-3xl shadow-sm space-y-8">
+              <div className="space-y-5">
                 <div className="flex gap-1">
                   {[...Array(5)].map((_, i) => (
-                    <svg
-                      key={i}
-                      className="size-4"
-                      fill="none"
-                      viewBox="0 0 16 16"
-                    >
-                      <path
-                        d="M8 1.5L10 5.5L14.5 6L11 9.5L12 14L8 11.5L4 14L5 9.5L1.5 6L6 5.5L8 1.5Z"
-                        fill="#1C1B1F"
-                      />
+                    <svg key={i} className="w-4 h-4" fill="none" viewBox="0 0 14 14">
+                      <path d="M7 1.5L9 5.5L13.5 6L10 9.5L11 13.5L7 11L3 13.5L4 9.5L0.5 6L5 5.5L7 1.5Z" fill="#1C1B1F" />
                     </svg>
                   ))}
                 </div>
-                <p className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] font-normal leading-[1.5] text-[#010205] text-[20px] lg:text-[22px] tracking-[-0.66px]">
-                  "Vectorly helped me land my Tesla internship!
-                  The theory-linked problems were exactly what I
-                  needed."
+                <p className="text-xl font-normal tracking-tight leading-snug">
+                  "Vectorly helped me land my Tesla internship! The theory-linked problems were exactly what I needed."
                 </p>
               </div>
-              <div>
-                <p className="font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium leading-[1.6] text-[14px]">
-                  <span className="text-[#373737]">
-                    Sarah Chen
-                  </span>
-                  <br />
-                  <span className="text-[#878c91]">
-                    ME Student, UC Berkeley
-                    <br />
-                    Now at Tesla
-                  </span>
-                </p>
-              </div>
+              <p className="text-xs leading-relaxed text-center">
+                <span className="text-gray-700 font-medium">Sarah Chen</span>
+                <br />
+                <span className="text-gray-500">ME Student, UC Berkeley</span>
+                <br />
+                <span className="text-gray-500">Now at Tesla</span>
+              </p>
             </div>
 
             {/* Testimonial 2 */}
-            <div className="bg-white p-8 rounded-[20px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] space-y-8">
-              <div className="space-y-6">
+            <div className="bg-white p-8 rounded-3xl shadow-sm space-y-8">
+              <div className="space-y-5">
                 <div className="flex gap-1">
                   {[...Array(5)].map((_, i) => (
-                    <svg
-                      key={i}
-                      className="size-4"
-                      fill="none"
-                      viewBox="0 0 16 16"
-                    >
-                      <path
-                        d="M8 1.5L10 5.5L14.5 6L11 9.5L12 14L8 11.5L4 14L5 9.5L1.5 6L6 5.5L8 1.5Z"
-                        fill="#1C1B1F"
-                      />
+                    <svg key={i} className="w-4 h-4" fill="none" viewBox="0 0 14 14">
+                      <path d="M7 1.5L9 5.5L13.5 6L10 9.5L11 13.5L7 11L3 13.5L4 9.5L0.5 6L5 5.5L7 1.5Z" fill="#1C1B1F" />
                     </svg>
                   ))}
                 </div>
-                <p className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] font-normal leading-[1.5] text-[#010205] text-[20px] lg:text-[22px] tracking-[-0.66px]">
-                  "Finally, interview prep that actually
-                  understands mechanical engineering. Got offers
-                  from 3 companies!"
+                <p className="text-xl font-normal tracking-tight leading-snug">
+                  "Finally, interview prep that actually understands mechanical engineering. Got offers from 3 companies!"
                 </p>
               </div>
-              <div>
-                <p className="font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium leading-[1.6] text-[14px]">
-                  <span className="text-[#373737]">
-                    Marcus Rodriguez
-                  </span>
-                  <br />
-                  <span className="text-[#878c91]">
-                    Recent Graduate
-                    <br />
-                    Now at Ford
-                  </span>
-                </p>
-              </div>
+              <p className="text-xs leading-relaxed text-center">
+                <span className="text-gray-700 font-medium">Marcus Rodriguez</span>
+                <br />
+                <span className="text-gray-500">Recent Graduate</span>
+                <br />
+                <span className="text-gray-500">Now at Ford</span>
+              </p>
             </div>
 
             {/* Testimonial 3 */}
-            <div className="bg-white p-8 rounded-[20px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] space-y-8 md:col-span-2 lg:col-span-1">
-              <div className="space-y-6">
+            <div className="bg-white p-8 rounded-3xl shadow-sm space-y-8">
+              <div className="space-y-5">
                 <div className="flex gap-1">
                   {[...Array(5)].map((_, i) => (
-                    <svg
-                      key={i}
-                      className="size-4"
-                      fill="none"
-                      viewBox="0 0 16 16"
-                    >
-                      <path
-                        d="M8 1.5L10 5.5L14.5 6L11 9.5L12 14L8 11.5L4 14L5 9.5L1.5 6L6 5.5L8 1.5Z"
-                        fill="#1C1B1F"
-                      />
+                    <svg key={i} className="w-4 h-4" fill="none" viewBox="0 0 14 14">
+                      <path d="M7 1.5L9 5.5L13.5 6L10 9.5L11 13.5L7 11L3 13.5L4 9.5L0.5 6L5 5.5L7 1.5Z" fill="#1C1B1F" />
                     </svg>
                   ))}
                 </div>
-                <p className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] font-normal leading-[1.5] text-[#010205] text-[20px] lg:text-[22px] tracking-[-0.66px]">
-                  "The industry-specific filters saved me so
-                  much time. Focused prep for aerospace
-                  interviews worked perfectly."
+                <p className="text-xl font-normal tracking-tight leading-snug">
+                  "The industry-specific filters saved me so much time. Focused prep for aerospace interviews worked perfectly."
                 </p>
               </div>
-              <div>
-                <p className="font-['Plus_Jakarta_Sans:Medium',_sans-serif] font-medium leading-[1.6] text-[14px]">
-                  <span className="text-[#373737]">
-                    Emily Johnson
-                  </span>
-                  <br />
-                  <span className="text-[#878c91]">
-                    ME Student, MIT
-                    <br />
-                    Now at Boeing
-                  </span>
-                </p>
-              </div>
+              <p className="text-xs leading-relaxed text-center">
+                <span className="text-gray-700 font-medium">Emily Johnson</span>
+                <br />
+                <span className="text-gray-500">ME Student, MIT</span>
+                <br />
+                <span className="text-gray-500">Now at Boeing</span>
+              </p>
             </div>
           </div>
         </div>
       </div>
 
       {/* CTA Section */}
-      <div className="bg-white w-full px-4 sm:px-8 py-12 lg:py-16">
-        <div className="max-w-[1200px] mx-auto">
-          <div className="bg-[#090909] rounded-[16px] p-8 sm:p-12 lg:p-16 space-y-8 lg:space-y-12 text-center">
-            <div className="bg-[rgba(255,255,255,0.22)] inline-flex items-center gap-3 px-6 py-3 rounded-[54px]">
-              <svg
-                className="size-6"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="3"
-                  stroke="white"
-                  strokeWidth="1.5"
-                />
-                <path
-                  d="M12 2L14 7L17 5L16 9L20 10L17 13L19 16L15 15L14 19L12 16L10 19L9 15L5 16L7 13L4 10L8 9L7 5L10 7L12 2Z"
-                  stroke="white"
-                  strokeWidth="1.5"
-                />
+      <div className="bg-white w-full px-4 sm:px-8 py-12 lg:py-20">
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-[#090909] rounded-2xl p-8 lg:p-16 text-center space-y-8">
+            <div className="bg-white/20 inline-flex items-center gap-3 px-6 py-3 rounded-full">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="4" stroke="white" strokeWidth="1.5" />
+                <path d="M16 2L18 9L22 7L21 12L26 13L22 17L25 21L20 20L18 25L16 21L14 25L12 20L7 21L10 17L6 13L11 12L10 7L14 9L16 2Z" stroke="white" strokeWidth="1.5" />
               </svg>
-              <p className="font-['Inter:Light',_sans-serif] font-light text-[14px] lg:text-[18px] text-white">
-                START YOUR JOURNEY TODAY
-              </p>
+              <span className="text-white text-sm font-light tracking-wider">START YOUR JOURNEY TODAY</span>
             </div>
 
-            <h2 className="font-['Inter:Semi_Bold',_sans-serif] font-semibold text-white text-[32px] sm:text-[48px] lg:text-[65px]">
+            <h2 className="text-3xl sm:text-4xl lg:text-6xl font-semibold text-white">
               Ready to Ace Your Next Interview?
             </h2>
 
-            <p className="font-['Inter:Light',_sans-serif] font-light text-white text-[24px] sm:text-[32px] lg:text-[47px] max-w-[1040px] mx-auto">
-              Join thousands of mechanical engineers who are
-              mastering their skills and landing their dream
-              jobs.
+            <p className="text-xl sm:text-2xl lg:text-4xl font-light text-white max-w-3xl mx-auto">
+              Join thousands of mechanical engineers who are mastering their skills and landing their dream jobs.
             </p>
 
             {userState === 'not_logged_in' ? (
               <AuthDialog defaultMode="signup">
-                <button className="bg-white text-black px-10 py-5 rounded-[47px] border-[3px] border-white font-['Inter:Regular',_sans-serif] font-normal text-[20px] lg:text-[24px] hover:bg-gray-100 transition-colors">
+                <button className="bg-white text-black px-10 py-5 rounded-full text-xl font-normal hover:bg-white/90 transition-colors border-2 border-white">
                   Start practicing now
                 </button>
               </AuthDialog>
             ) : (
               <button
                 onClick={handleStartPracticing}
-                className="bg-white text-black px-10 py-5 rounded-[47px] border-[3px] border-white font-['Inter:Regular',_sans-serif] font-normal text-[20px] lg:text-[24px] hover:bg-gray-100 transition-colors"
+                className="bg-white text-black px-10 py-5 rounded-full text-xl font-normal hover:bg-white/90 transition-colors border-2 border-white"
               >
                 Start practicing now
               </button>
             )}
 
-            <p className="font-['Inter:Light',_sans-serif] font-light text-[#dfdfdf] text-[16px] lg:text-[22px] max-w-[1040px] mx-auto">
-              No credit card required • Free forever • Cancel
-              anytime
+            <p className="text-[#dfdfdf] text-lg">
+              No credit card required • Free forever • Cancel anytime
             </p>
           </div>
         </div>
       </div>
 
       {/* Coming Soon Section */}
-      <div className="bg-white w-full px-4 sm:px-8 lg:px-20 py-12 lg:py-16">
-        <div className="max-w-[1440px] mx-auto">
-          <h2 className="font-['Plus_Jakarta_Sans:SemiBold',_sans-serif] font-semibold leading-[1.3] text-[#010205] text-[32px] sm:text-[40px] lg:text-[48px] tracking-[-1.44px] text-center mb-12">
+      <div className="bg-neutral-50 w-full px-4 sm:px-8 lg:px-16 py-12 lg:py-16">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="font-semibold text-3xl sm:text-4xl lg:text-5xl text-center mb-8 tracking-tight">
             Coming soon
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-[1200px] mx-auto">
-            <div className="bg-[#020609] rounded-[10px] p-8 text-center">
-              <p className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] font-normal leading-[1.3] text-white text-[28px] sm:text-[32px] lg:text-[40px] tracking-[-1.2px]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <div className="bg-[#020609] rounded-2xl p-8 lg:p-12 flex items-center justify-center">
+              <p className="text-3xl lg:text-4xl font-normal text-white text-center tracking-tight">
                 Mock interviews
               </p>
             </div>
-            <div className="bg-[#020609] rounded-[10px] p-8 text-center">
-              <p className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] font-normal leading-[1.3] text-white text-[28px] sm:text-[32px] lg:text-[40px] tracking-[-1.2px]">
+            <div className="bg-[#020609] rounded-2xl p-8 lg:p-12 flex items-center justify-center">
+              <p className="text-3xl lg:text-4xl font-normal text-white text-center tracking-tight">
                 Additional engineering majors
               </p>
             </div>
@@ -1031,195 +706,79 @@ function ResponsiveDm1() {
       </div>
 
       {/* Footer */}
-      <footer
-        id="contact"
-        className="bg-[#010205] w-full px-4 sm:px-8 lg:px-20 py-12 lg:py-16"
-      >
-        <div className="max-w-[1440px] mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 mb-12">
-            {/* Column 1 - Logo & About */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <svg
-                  className="size-8"
-                  fill="none"
-                  viewBox="0 0 53 48"
-                >
-                  <path
-                    d="M45.0379 0C51.1627 0 54.9872 6.62654 51.9177 11.9204L41.0495 30.6637C40.5418 31.5393 39.4195 31.8381 38.5429 31.331C37.6662 30.8239 37.3671 29.703 37.8748 28.8273L48.743 10.084C50.3961 7.23303 48.3364 3.6643 45.0379 3.6643C43.5102 3.66432 42.0983 4.47729 41.3327 5.79767L30.3497 24.7408C29.249 26.6393 29.2454 28.9802 30.3405 30.882L33.3731 36.1488C34.7788 38.59 34.7787 41.5937 33.3729 44.0348C30.3294 49.3195 22.6963 49.3223 19.6489 44.0398L1.06662 11.8288C-1.96768 6.56892 1.83324 0 7.91101 0C10.7297 1.871e-05 13.3349 1.5002 14.7472 3.93668L20.1168 13.2004C20.6243 14.0761 20.325 15.197 19.4483 15.704C18.5715 16.211 17.4493 15.912 16.9417 15.0363L11.5721 5.77263C10.8157 4.46778 9.42057 3.66432 7.91101 3.6643C4.65598 3.6643 2.62028 7.18238 4.2453 9.99937L22.8276 42.2104C24.463 45.0453 28.5594 45.0438 30.1927 42.2077C30.9472 40.8976 30.9473 39.2856 30.1929 37.9755L27.1603 32.7089C25.412 29.6726 25.4177 25.9355 27.1751 22.9044L38.1581 3.96131C39.5796 1.50956 42.2013 1.47685e-05 45.0379 0Z"
-                    fill="white"
-                  />
+      <footer id="contact" className="bg-neutral-50 w-full py-12 lg:py-16 border-t">
+        <div className="max-w-7xl mx-auto px-4 lg:px-16">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-12 mb-12 text-center md:text-left">
+            {/* Logo & Description */}
+            <div className="col-span-2 md:col-span-1 space-y-6 flex flex-col items-center md:items-start">
+              <div className="flex items-center gap-2">
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 53 48">
+                  <path d="M45.0379 0C51.1627 0 54.9872 6.62654 51.9177 11.9204L41.0495 30.6637C40.5418 31.5393 39.4195 31.8381 38.5429 31.331C37.6662 30.8239 37.3671 29.703 37.8748 28.8273L48.743 10.084C50.3961 7.23303 48.3364 3.6643 45.0379 3.6643C43.5102 3.66432 42.0983 4.47729 41.3327 5.79767L30.3497 24.7408C29.249 26.6393 29.2454 28.9802 30.3405 30.882L33.3731 36.1488C34.7788 38.59 34.7787 41.5937 33.3729 44.0348C30.3294 49.3195 22.6963 49.3223 19.6489 44.0398L1.06662 11.8288C-1.96768 6.56892 1.83324 0 7.91101 0C10.7297 1.871e-05 13.3349 1.5002 14.7472 3.93668L20.1168 13.2004C20.6243 14.0761 20.325 15.197 19.4483 15.704C18.5715 16.211 17.4493 15.912 16.9417 15.0363L11.5721 5.77263C10.8157 4.46778 9.42057 3.66432 7.91101 3.6643C4.65598 3.6643 2.62028 7.18238 4.2453 9.99937L22.8276 42.2104C24.463 45.0453 28.5594 45.0438 30.1927 42.2077C30.9472 40.8976 30.9473 39.2856 30.1929 37.9755L27.1603 32.7089C25.412 29.6726 25.4177 25.9355 27.1751 22.9044L38.1581 3.96131C39.5796 1.50956 42.2013 1.47685e-05 45.0379 0Z" fill="#090909" />
                 </svg>
-                <p className="font-['JetBrains_Mono:Regular',_sans-serif] font-normal text-[20px] text-white">
-                  Vectorly
-                </p>
+                <span className="text-xl font-bold">Vectorly</span>
               </div>
-              <p className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] font-normal text-[14px] text-gray-400 leading-relaxed">
-                The premier platform for mechanical engineering
-                interview preparation.
+              <p className="text-sm text-gray-600 leading-relaxed max-w-xs">
+                We offer a platform for engineers to practice interview questions so that they can be better prepared for their job interviews.
               </p>
+              <div className="flex gap-3">
+                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4" fill="#192031" viewBox="0 0 7 13">
+                    <path d="M4.34375 12.957V7.04492H6.125L6.38281 4.82812H4.34375V3.41797C4.34375 2.78516 4.51172 2.35547 5.39062 2.35547H6.44922V0.378906C5.99609 0.326172 5.54297 0.300781 5.08984 0.300781C3.30859 0.300781 2.07812 1.38672 2.07812 3.16797V4.80078H0.300781V7.01758H2.10547V12.957H4.34375Z" />
+                  </svg>
+                </div>
+                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4" fill="#192031" viewBox="0 0 16 13">
+                    <path d="M14.3555 3.09375C14.3555 3.22266 14.3555 3.32422 14.3555 3.45312C14.3555 7.78906 11.043 12.7773 5.03906 12.7773C3.18359 12.7773 1.45312 12.2109 0 11.2812C0.257812 11.3086 0.515625 11.3359 0.800781 11.3359C2.34375 11.3359 3.78906 10.7969 4.92188 9.86719C3.46875 9.83984 2.21094 8.85547 1.82031 7.50781C2.02344 7.53516 2.22656 7.5625 2.42969 7.5625C2.71484 7.5625 3.02734 7.50781 3.3125 7.42578C1.79297 7.09766 0.648438 5.73828 0.648438 4.08594V4.03125C1.06641 4.26172 1.55859 4.39062 2.07812 4.41797C1.17969 3.81641 0.621094 2.78516 0.621094 1.60938C0.621094 0.964844 0.800781 0.375 1.10547 -0.132812C2.74219 1.86328 5.19531 3.14844 7.92969 3.27734C7.875 3.04688 7.84766 2.78906 7.84766 2.55859C7.84766 0.65625 9.375 -0.871094 11.2773 -0.871094C12.2617 -0.871094 13.1328 -0.476562 13.7617 0.148438C14.5508 -0.0273438 15.2852 -0.285156 15.9688 -0.679688C15.7109 0.121094 15.1719 0.9375 14.4648 1.45703C15.1719 1.37891 15.8516 1.19922 16.5039 0.9375C15.9961 1.78125 15.2891 2.51562 14.3555 3.09375Z" />
+                  </svg>
+                </div>
+                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4" fill="#192031" viewBox="0 0 14 14">
+                    <path d="M12.5195 0.214844H1.34766C0.691406 0.214844 0.171875 0.734375 0.171875 1.39062V12.5625C0.171875 13.2188 0.691406 13.7383 1.34766 13.7383H12.5195C13.1758 13.7383 13.6953 13.2188 13.6953 12.5625V1.39062C13.6953 0.734375 13.1758 0.214844 12.5195 0.214844ZM4.29688 11.7422H2.25781V5.30859H4.29688V11.7422ZM3.27734 4.42578C2.59375 4.42578 2.04688 3.87891 2.04688 3.19531C2.04688 2.51172 2.59375 1.96484 3.27734 1.96484C3.96094 1.96484 4.50781 2.51172 4.50781 3.19531C4.50781 3.87891 3.93359 4.42578 3.27734 4.42578ZM11.7891 11.7422H9.75V8.63281C9.75 7.89453 9.75 6.91016 8.68359 6.91016C7.61719 6.91016 7.43359 7.73438 7.43359 8.58594V11.7422H5.39453V5.30859H7.35156V6.15625H7.37891C7.66016 5.625 8.35547 5.09375 9.39453 5.09375C11.4609 5.09375 11.7891 6.5 11.7891 8.29297V11.7422Z" />
+                  </svg>
+                </div>
+                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4" fill="#192031" viewBox="0 0 14 16">
+                    <path d="M6.97656 0.0859375C3.11719 0.0859375 0 3.20312 0 7.0625C0 10.1875 1.99219 12.8438 4.77344 13.7734C5.11719 13.8281 5.23828 13.6172 5.23828 13.4336C5.23828 13.2773 5.23828 12.8711 5.23047 12.3281C3.29297 12.7344 2.88281 11.3984 2.88281 11.3984C2.56641 10.5781 2.10156 10.3672 2.10156 10.3672C1.47266 9.96094 2.15625 9.96875 2.15625 9.96875C2.83984 10.0234 3.22266 10.6523 3.22266 10.6523C3.85156 11.6914 4.86719 11.3711 5.26562 11.1875C5.32031 10.7227 5.53125 10.4023 5.74219 10.2188C4.17969 10.0352 2.53516 9.43359 2.53516 6.72656C2.53516 5.95703 2.80469 5.32812 3.23047 4.83594C3.17578 4.65234 2.91406 3.94141 3.28516 2.99219C3.28516 2.99219 3.88672 2.80859 5.23047 3.71094C5.80469 3.55469 6.38672 3.47266 6.97656 3.47266C7.56641 3.47266 8.14844 3.55469 8.72266 3.71094C10.0664 2.80859 10.668 2.99219 10.668 2.99219C11.0391 3.94141 10.7773 4.65234 10.7227 4.83594C11.1484 5.32812 11.418 5.95703 11.418 6.72656C11.418 9.44141 9.76562 10.0352 8.19531 10.2109C8.46484 10.4492 8.70703 10.8984 8.70703 11.5859C8.70703 12.5391 8.69922 13.3047 8.69922 13.4336C8.69922 13.6172 8.82031 13.8281 9.16406 13.7734C11.9453 12.8359 13.9375 10.1875 13.9375 7.0625C13.9375 3.20312 10.8281 0.0859375 6.97656 0.0859375Z" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
-            {/* Column 2 - Product */}
-            <div>
-              <h4 className="font-['Plus_Jakarta_Sans:SemiBold',_sans-serif] font-semibold text-white text-[16px] mb-4">
-                Product
-              </h4>
-              <ul className="space-y-3">
-                <li>
-                  <a
-                    href="#practice"
-                    className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] text-[14px] text-gray-400 hover:text-white transition-colors"
-                  >
-                    Practice
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#dashboard"
-                    className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] text-[14px] text-gray-400 hover:text-white transition-colors"
-                  >
-                    Dashboard
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#features"
-                    className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] text-[14px] text-gray-400 hover:text-white transition-colors"
-                  >
-                    Features
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#pricing"
-                    className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] text-[14px] text-gray-400 hover:text-white transition-colors"
-                  >
-                    Pricing
-                  </a>
-                </li>
+            {/* Navigation */}
+            <div className="flex flex-col items-center md:items-start">
+              <h3 className="text-base font-semibold mb-6">Navigation</h3>
+              <ul className="space-y-4 text-sm text-gray-600">
+                <li><a href="#practice" className="hover:text-black">Practice</a></li>
+                <li><a href="#dashboard" className="hover:text-black">Dashboard</a></li>
+                <li><a href="#features" className="hover:text-black">Features</a></li>
+                <li><a href="#pricing" className="hover:text-black">Pricing</a></li>
               </ul>
             </div>
 
-            {/* Column 3 - Company */}
-            <div>
-              <h4 className="font-['Plus_Jakarta_Sans:SemiBold',_sans-serif] font-semibold text-white text-[16px] mb-4">
-                Company
-              </h4>
-              <ul className="space-y-3">
-                <li>
-                  <a
-                    href="#about"
-                    className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] text-[14px] text-gray-400 hover:text-white transition-colors"
-                  >
-                    About
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#careers"
-                    className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] text-[14px] text-gray-400 hover:text-white transition-colors"
-                  >
-                    Careers
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#blog"
-                    className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] text-[14px] text-gray-400 hover:text-white transition-colors"
-                  >
-                    Blog
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#contact"
-                    className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] text-[14px] text-gray-400 hover:text-white transition-colors"
-                  >
-                    Contact
-                  </a>
-                </li>
+            {/* License */}
+            <div className="flex flex-col items-center md:items-start">
+              <h3 className="text-base font-semibold mb-6">License</h3>
+              <ul className="space-y-4 text-sm text-gray-600">
+                <li><a href="#privacy" className="hover:text-black">Privacy Policy</a></li>
+                <li><a href="#terms" className="hover:text-black">Terms of use</a></li>
               </ul>
             </div>
 
-            {/* Column 4 - Legal */}
-            <div>
-              <h4 className="font-['Plus_Jakarta_Sans:SemiBold',_sans-serif] font-semibold text-white text-[16px] mb-4">
-                Legal
-              </h4>
-              <ul className="space-y-3">
-                <li>
-                  <a
-                    href="#privacy"
-                    className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] text-[14px] text-gray-400 hover:text-white transition-colors"
-                  >
-                    Privacy Policy
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#terms"
-                    className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] text-[14px] text-gray-400 hover:text-white transition-colors"
-                  >
-                    Terms of Service
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#cookies"
-                    className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] text-[14px] text-gray-400 hover:text-white transition-colors"
-                  >
-                    Cookie Policy
-                  </a>
-                </li>
-              </ul>
+            {/* Contact */}
+            <div className="flex flex-col items-center md:items-start">
+              <h3 className="text-base font-semibold mb-6">Contact</h3>
+              <div className="flex items-center gap-4">
+                <svg className="w-5 h-5" fill="#192031" viewBox="0 0 21 21">
+                  <path d="M19.5 3.5C19.5 2.67188 18.8203 2 18 2H3C2.17188 2 1.5 2.67188 1.5 3.5V17C1.5 17.8281 2.17188 18.5 3 18.5H18C18.8203 18.5 19.5 17.8281 19.5 17V3.5ZM17.1562 4.625L10.5 9.59375L3.84375 4.625H17.1562ZM3.375 16.625V5.375L10.5 10.625L17.625 5.375V16.625H3.375Z" />
+                </svg>
+                <p className="text-sm text-gray-600">Hey@boostim.com</p>
+              </div>
             </div>
           </div>
 
-          {/* Footer Bottom */}
-          <div className="border-t border-gray-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="font-['Plus_Jakarta_Sans:Regular',_sans-serif] text-[14px] text-gray-400">
-              © 2025 Vectorly. All rights reserved.
-            </p>
-            <div className="flex items-center gap-6">
-              <a
-                href="#twitter"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <svg
-                  className="size-5"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z" />
-                </svg>
-              </a>
-              <a
-                href="#linkedin"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <svg
-                  className="size-5"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z" />
-                  <circle cx="4" cy="4" r="2" />
-                </svg>
-              </a>
-              <a
-                href="#github"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <svg
-                  className="size-5"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
-                </svg>
-              </a>
-            </div>
+          {/* Footer Bottom - Copyright */}
+          <div className="mt-8 pt-8 border-t text-center text-sm text-gray-600">
+            © 2025 Vectorly. All rights reserved.
           </div>
         </div>
       </footer>

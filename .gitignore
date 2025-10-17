@@ -33,6 +33,9 @@ archive/
 # Documentation
 docs/
 
+# Code Responsive Website folder (design reference)
+Code Responsive Website/
+
 #environment variables
 .env
 .env.local
