@@ -294,7 +294,7 @@ function ResponsiveDm1() {
                 </p>
                 {userState === 'not_logged_in' ? (
                   <AuthDialog defaultMode="signup">
-                    <button className="bg-black rounded-full p-3 hover:bg-gray-800 transition-colors flex-shrink-0">
+                    <button type="button" className="bg-black rounded-full p-3 hover:bg-gray-800 transition-colors flex-shrink-0">
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24">
                         <path d="M5 12H19" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                         <path d="M12 5L19 12L12 19" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
@@ -302,7 +302,7 @@ function ResponsiveDm1() {
                     </button>
                   </AuthDialog>
                 ) : (
-                  <button onClick={handleStartPracticing} className="bg-black rounded-full p-3 hover:bg-gray-800 transition-colors flex-shrink-0">
+                  <button type="button" onClick={handleStartPracticing} className="bg-black rounded-full p-3 hover:bg-gray-800 transition-colors flex-shrink-0">
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24">
                       <path d="M5 12H19" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                       <path d="M12 5L19 12L12 19" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
@@ -346,7 +346,7 @@ function ResponsiveDm1() {
                 </p>
                 {userState === 'not_logged_in' ? (
                   <AuthDialog defaultMode="signup">
-                    <button className="bg-black rounded-full p-3 hover:bg-gray-800 transition-colors flex-shrink-0">
+                    <button type="button" className="bg-black rounded-full p-3 hover:bg-gray-800 transition-colors flex-shrink-0">
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24">
                         <path d="M5 12H19" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                         <path d="M12 5L19 12L12 19" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
@@ -354,7 +354,7 @@ function ResponsiveDm1() {
                     </button>
                   </AuthDialog>
                 ) : (
-                  <button onClick={handleStartPracticing} className="bg-black rounded-full p-3 hover:bg-gray-800 transition-colors flex-shrink-0">
+                  <button type="button" onClick={handleStartPracticing} className="bg-black rounded-full p-3 hover:bg-gray-800 transition-colors flex-shrink-0">
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24">
                       <path d="M5 12H19" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                       <path d="M12 5L19 12L12 19" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
