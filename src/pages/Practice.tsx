@@ -1,579 +1,315 @@
-// src/pages/Practice.tsx
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import Navbar from "@/components/ui/navbar";
-import { Search, Filter, Star, Clock, CheckCircle, Target, ArrowRight, Lock, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { submissionService } from "@/services/submissionService";
-import { bookmarkService } from "@/services/bookmarkService";
-import { supabase } from "@/lib/supabase";
-import { listProblems, type DbProblem } from "@/services/problemService";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ProblemCard } from '@/components/ProblemCard';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
+import { listProblems, type DbProblem } from '@/services/problemService';
+import { submissionService, type UserSubmission } from '@/services/submissionService';
+import { useAuth } from '@/contexts/AuthContext';
+import { Problem, Difficulty, FieldOfStudy, Topic } from '@/types';
+import { supabase } from '@/lib/supabase';
 
-interface UserSubmission {
-  id: string;
-  problem_id: string;
-  status: "attempted" | "solved" | "partially_solved" | "skipped";
+// Extended Problem type with status
+interface ProblemWithStatus extends Problem {
+  status?: 'not_started' | 'attempted' | 'solved';
 }
 
-const Practice = () => {
-  const { user } = useAuth();
+// Map DbProblem to our Problem type used in ProblemCard
+function mapDbProblemToProblem(
+  dbProblem: DbProblem,
+  isStarred = false,
+  status: 'not_started' | 'attempted' | 'solved' = 'not_started'
+): ProblemWithStatus {
+  const difficultyMap: Record<string, Difficulty> = {
+    'easy': 'Easy',
+    'medium': 'Medium',
+    'hard': 'Hard'
+  };
+
+  return {
+    id: dbProblem.id,
+    title: dbProblem.title,
+    description: dbProblem.description,
+    detailedProblem: dbProblem.prompt || dbProblem.description,
+    difficulty: difficultyMap[dbProblem.difficulty] || 'Medium',
+    topic: dbProblem.subject as Topic,
+    field: dbProblem.industry as FieldOfStudy,
+    timeToSolve: dbProblem.time_limit_minutes || 30,
+    companies: dbProblem.companies || [],
+    isFree: !dbProblem.is_premium,
+    isStarred,
+    hints: dbProblem.hints || [],
+    status,
+  };
+}
+
+export default function Practice() {
   const navigate = useNavigate();
-
-  // Filters
-  const [searchTerm, setSearchTerm] = useState("");
-  const [difficultyFilter, setDifficultyFilter] = useState("all");
-  const [subjectFilter, setSubjectFilter] = useState("all");
-  const [industryFilter, setIndustryFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all"); // New: filter by status/bookmark
-
-  // Data
-  const [problems, setProblems] = useState<DbProblem[]>([]);
+  const { user } = useAuth();
+  const [problems, setProblems] = useState<ProblemWithStatus[]>([]);
   const [submissions, setSubmissions] = useState<UserSubmission[]>([]);
-  const [bookmarkedProblemIds, setBookmarkedProblemIds] = useState<string[]>([]);
-  const [submissionStats, setSubmissionStats] = useState({
-    total: 0,
-    solved: 0,
-    attempted: 0,
-    totalTime: 0,
-    accuracy: 0,
-  });
-
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
+  const [fieldFilter, setFieldFilter] = useState<string>('all');
+  const [topicFilter, setTopicFilter] = useState<string>('all');
+  const [starredProblems, setStarredProblems] = useState<Set<string>>(new Set());
+
+  // Fetch user submissions
+  useEffect(() => {
+    const fetchSubmissions = async () => {
+      if (!user) {
+        setSubmissions([]);
+        return;
+      }
+
+      try {
+        const userSubmissions = await submissionService.getUserSubmissions(user.id);
+        setSubmissions(userSubmissions);
+      } catch (error) {
+        console.error('Error fetching submissions:', error);
+      }
+    };
+
+    fetchSubmissions();
+
+    // Set up real-time listener for submission changes
+    if (user) {
+      const channel = supabase
+        .channel('ui-updates', { config: { broadcast: { self: false } } })
+        .on('broadcast', { event: 'attempts_changed' }, (msg) => {
+          if (msg?.payload?.userId === user.id) {
+            fetchSubmissions();
+          }
+        })
+        .subscribe();
+
+      return () => {
+        channel.unsubscribe();
+      };
+    }
+  }, [user]);
 
   // Fetch problems from Supabase when filters change
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const fetchProblems = async () => {
       try {
-        const rows = await listProblems({
-          search: searchTerm,
-          difficulty: difficultyFilter,
-          subject: subjectFilter,
-          industry: industryFilter,
+        setLoading(true);
+        const dbProblems = await listProblems({
+          search: searchQuery,
+          difficulty: difficultyFilter === 'all' ? undefined : difficultyFilter.toLowerCase(),
+          subject: topicFilter === 'all' ? undefined : topicFilter,
+          industry: fieldFilter === 'all' ? undefined : fieldFilter,
         });
-        if (!cancelled) setProblems(rows);
-      } catch (e) {
-        console.error("Failed to load problems:", e);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [searchTerm, difficultyFilter, subjectFilter, industryFilter]);
 
-  // Initial load of submissions/stats
-  useEffect(() => {
-    if (user) {
-      loadUserData();
-    } else {
-      setLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+        if (!cancelled) {
+          // Create a map of problem statuses from submissions
+          const statusMap = new Map<string, 'not_started' | 'attempted' | 'solved'>();
+          submissions.forEach(sub => {
+            if (sub.status === 'solved') {
+              statusMap.set(sub.problem_id, 'solved');
+            } else if (sub.status === 'attempted' || sub.status === 'partially_solved') {
+              statusMap.set(sub.problem_id, 'attempted');
+            }
+          });
 
-  // Load user submissions + stats + bookmarks
-  const loadUserData = async () => {
-    if (!user) return;
-    try {
-      setLoading(true);
-      const userSubmissions = await submissionService.getUserSubmissions(user.id);
-      setSubmissions(userSubmissions);
-
-      const stats = await submissionService.getSubmissionStats(user.id);
-      setSubmissionStats(stats);
-
-      const bookmarks = await bookmarkService.getUserBookmarks(user.id);
-      setBookmarkedProblemIds(bookmarks);
-    } catch (error) {
-      console.error("Error loading user data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 🔔 Broadcast listener so Practice list updates instantly
-  useEffect(() => {
-    if (!user) return;
-    const ch = supabase
-      .channel("ui-updates", { config: { broadcast: { self: true } } })
-      .on("broadcast", { event: "attempts_changed" }, (msg) => {
-        console.log('📡 Practice page received broadcast:', msg);
-        if (msg?.payload?.userId === user.id) {
-          console.log('✅ Reloading practice data...');
-          loadUserData();
+          const mappedProblems = dbProblems.map(p =>
+            mapDbProblemToProblem(
+              p,
+              starredProblems.has(p.id),
+              statusMap.get(p.id) || 'not_started'
+            )
+          );
+          setProblems(mappedProblems);
         }
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
-
-  // Helpers
-  const getDifficultyVariant = (difficulty: string) => {
-    switch (difficulty) {
-      case "easy":
-        return "easy";
-      case "medium":
-        return "medium";
-      case "hard":
-        return "hard";
-      default:
-        return "default";
-    }
-  };
-
-  const getSubmissionStatus = (problemId: string) => {
-    const submission = submissions.find((s) => s.problem_id === problemId);
-    return submission?.status || null;
-  };
-
-  const getButtonText = (problemId: string) => {
-    const status = getSubmissionStatus(problemId);
-    switch (status) {
-      case "solved":
-        return "Review";
-      case "partially_solved":
-      case "attempted":
-        return "Continue";
-      case "skipped":
-        return "Retry";
-      default:
-        return "Solve";
-    }
-  };
-
-  const getButtonVariant = (problemId: string) => {
-    const status = getSubmissionStatus(problemId);
-    return status === "solved" ? "success" : "default";
-  };
-
-  // Click → navigate + mark attempted (fire and forget)
-  const handleProblemClick = (problemId: string) => {
-    if (!user) return;
-
-    console.log('🎯 User clicked problem:', problemId);
-
-    // Navigate immediately, mark in background
-    navigate(`/practice/interface?problem=${problemId}`);
-
-    // Mark as attempted in background (don't wait)
-    submissionService
-      .markAsAttempted(problemId)
-      .then(() => console.log('✅ Problem marked as attempted'))
-      .catch((err) => console.error("Failed to mark problem as attempted:", err));
-  };
-
-  // Handle bookmark toggle
-  const handleBookmarkToggle = async (e: React.MouseEvent, problemId: string) => {
-    e.stopPropagation(); // Prevent card click
-    if (!user) return;
-
-    try {
-      const isCurrentlyBookmarked = bookmarkedProblemIds.includes(problemId);
-
-      if (isCurrentlyBookmarked) {
-        // Optimistically update UI
-        setBookmarkedProblemIds(prev => prev.filter(id => id !== problemId));
-        await bookmarkService.removeBookmark(user.id, problemId);
-      } else {
-        // Optimistically update UI
-        setBookmarkedProblemIds(prev => [...prev, problemId]);
-        await bookmarkService.addBookmark(user.id, problemId);
+      } catch (error) {
+        console.error('Error fetching problems:', error);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    } catch (error) {
-      console.error("Error toggling bookmark:", error);
-      // Revert on error by reloading
-      loadUserData();
-    }
+    };
+
+    fetchProblems();
+    return () => { cancelled = true; };
+  }, [searchQuery, difficultyFilter, topicFilter, fieldFilter, starredProblems, submissions]);
+
+  const handleSelectProblem = (problemId: string) => {
+    // Store the selected problem ID in sessionStorage
+    sessionStorage.setItem('selectedProblemId', problemId);
+    navigate('/practice/interface');
   };
 
-  // Check if problem is bookmarked
-  const isBookmarked = (problemId: string) => bookmarkedProblemIds.includes(problemId);
+  const handleToggleStar = (problemId: string) => {
+    setStarredProblems(prev => {
+      const next = new Set(prev);
+      if (next.has(problemId)) {
+        next.delete(problemId);
+      } else {
+        next.add(problemId);
+      }
+      return next;
+    });
 
-  // Filter problems based on status filter
-  const filterProblemsByStatus = (problemList: DbProblem[]) => {
-    if (statusFilter === "bookmarked") {
-      return problemList.filter(p => isBookmarked(p.id));
-    }
-    return problemList;
+    setProblems(prev =>
+      prev.map(problem =>
+        problem.id === problemId
+          ? { ...problem, isStarred: !problem.isStarred }
+          : problem
+      )
+    );
   };
 
-  // Split lists
-  const allFreeProblems = problems.filter((p) => !p.is_premium);
-  const allPremiumProblems = problems.filter((p) => p.is_premium);
-
-  const freeProblems = filterProblemsByStatus(allFreeProblems);
-  const premiumProblems = filterProblemsByStatus(allPremiumProblems);
-
-  const canAccessPremium = (user as any)?.subscription_tier === "premium";
+  const handleUpgrade = () => {
+    navigate('/upgrade');
+  };
 
   return (
-    // will probably add the debug aspect to like and admin account in the near future
-    <div className="min-h-screen bg-gradient-card">
-      <Navbar />
-
-      <div className="container mx-auto px-4 py-8">
-
-        {/* Debug
-        <Card className="mb-4 bg-yellow-50 border-yellow-200">
-          <CardContent className="pt-4">
-            <h3 className="font-semibold mb-2">🧪 Debug Test</h3>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={() => navigate("/practice/interface?problem=ve-thermo-001")}
+    <div className="min-h-screen bg-gray-50">
+      {/* Navigation Bar */}
+      <nav className="bg-white border-b sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-2">
+              <svg
+                className="w-8 h-8 text-black"
+                fill="currentColor"
+                viewBox="0 0 53 48"
               >
-                Test Direct Navigation
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => {
-                  console.log("🧪 Current user:", user);
-                  console.log("🧪 Current submissions:", submissions);
-                  console.log("🧪 Problems (from DB):", problems);
-                }}
-              >
-                Log Debug Info
-              </Button>
-            </div>
-          </CardContent>
-        </Card> */}
-
-        {/* Header with Stats */}
-        <div className="mb-8">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold mb-2">Practice Problems</h1>
-              <p className="text-sm sm:text-base text-muted-foreground">
-                Master mechanical engineering interviews with real questions
-              </p>
+                <path d="M45.0379 0C51.1627 0 54.9872 6.62654 51.9177 11.9204L41.0495 30.6637C40.5418 31.5393 39.4195 31.8381 38.5429 31.331C37.6662 30.8239 37.3671 29.703 37.8748 28.8273L48.743 10.084C50.3961 7.23303 48.3364 3.6643 45.0379 3.6643C43.5102 3.66432 42.0983 4.47729 41.3327 5.79767L30.3497 24.7408C29.249 26.6393 29.2454 28.9802 30.3405 30.882L33.3731 36.1488C34.7788 38.59 34.7787 41.5937 33.3729 44.0348C30.3294 49.3195 22.6963 49.3223 19.6489 44.0398L1.06662 11.8288C-1.96768 6.56892 1.83324 0 7.91101 0C10.7297 1.871e-05 13.3349 1.5002 14.7472 3.93668L20.1168 13.2004C20.6243 14.0761 20.325 15.197 19.4483 15.704C18.5715 16.211 17.4493 15.912 16.9417 15.0363L11.5721 5.77263C10.8157 4.46778 9.42057 3.66432 7.91101 3.6643C4.65598 3.6643 2.62028 7.18238 4.2453 9.99937L22.8276 42.2104C24.463 45.0453 28.5594 45.0438 30.1927 42.2077C30.9472 40.8976 30.9473 39.2856 30.1929 37.9755L27.1603 32.7089C25.412 29.6726 25.4177 25.9355 27.1751 22.9044L38.1581 3.96131C39.5796 1.50956 42.2013 1.47685e-05 45.0379 0Z" />
+              </svg>
+              <h1 className="text-xl font-semibold">Vectorly</h1>
             </div>
 
-            <div className="flex gap-3 sm:gap-4 w-full lg:w-auto">
-              <Card className="text-center p-3 sm:p-4 flex-1 lg:flex-none">
-                <div className="text-xl sm:text-2xl font-bold text-primary">
-                  {loading ? (
-                    <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin mx-auto" />
-                  ) : (
-                    submissionStats.solved
-                  )}
-                </div>
-                <div className="text-xs sm:text-sm text-muted-foreground">Solved</div>
-              </Card>
-              <Card className="text-center p-3 sm:p-4 flex-1 lg:flex-none">
-                <div className="text-xl sm:text-2xl font-bold text-accent">
-                  {loading ? (
-                    <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin mx-auto" />
-                  ) : (
-                    Math.round(submissionStats.totalTime / 60)
-                  )}
-                </div>
-                <div className="text-xs sm:text-sm text-muted-foreground">Hours</div>
-              </Card>
-              <Card className="text-center p-3 sm:p-4 flex-1 lg:flex-none">
-                <div className="text-xl sm:text-2xl font-bold text-warning">
-                  {loading ? (
-                    <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin mx-auto" />
-                  ) : (
-                    `${submissionStats.accuracy}%`
-                  )}
-                </div>
-                <div className="text-xs sm:text-sm text-muted-foreground">Accuracy</div>
-              </Card>
+            <div className="flex gap-6 items-center">
+              <button
+                onClick={() => navigate('/')}
+                className="font-semibold text-sm hover:text-black transition-colors"
+              >
+                Home
+              </button>
+              <button
+                className="font-semibold text-sm text-black border-b-2 border-black"
+              >
+                Practice
+              </button>
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="font-semibold text-sm hover:text-black transition-colors"
+              >
+                Dashboard
+              </button>
             </div>
           </div>
-          
-          {/* Interactive Practice Mode Banner (getting rid of this for the time being)
-          <Card className="border-primary shadow-strong bg-gradient-primary text-white mb-6">
-            <CardContent className="pt-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex-1">
-                  <h3 className="text-base sm:text-lg font-semibold mb-1">🚀 Interactive Practice Mode</h3>
-                  <p className="text-white/90 text-xs sm:text-sm">
-                    Experience real interview conditions with whiteboard, timer, and structured feedback
-                  </p>
-                </div>
-                <Button variant="secondary" size="lg" className="w-full sm:w-auto whitespace-nowrap" asChild>
-                  <Link to="interface">
-                    Try Interactive Mode
-                    <ArrowRight className="ml-2 w-4 h-4" />
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card> */}
+        </div>
+      </nav>
+
+      {/* Page Content */}
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="mb-8">
+          <h1 className="mb-2">Practice Problems</h1>
+          <p className="text-gray-600">
+            Master engineering fundamentals through real interview questions from top companies
+          </p>
         </div>
 
-        {/* Filters */}
-        <Card className="mb-8 shadow-medium">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="w-5 h-5" />
-              Filters
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  placeholder="Search problems..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
+      {/* Filters */}
+      <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            type="text"
+            placeholder="Search problems..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
 
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Problems</SelectItem>
-                  <SelectItem value="bookmarked">
-                    <div className="flex items-center gap-2">
-                      <Star className="w-4 h-4" />
-                      Bookmarked
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+        <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
+          <SelectTrigger>
+            <SelectValue placeholder="Difficulty" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Difficulties</SelectItem>
+            <SelectItem value="Easy">Easy</SelectItem>
+            <SelectItem value="Medium">Medium</SelectItem>
+            <SelectItem value="Hard">Hard</SelectItem>
+          </SelectContent>
+        </Select>
 
-              <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Difficulty" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Difficulties</SelectItem>
-                  <SelectItem value="easy">Easy</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="hard">Hard</SelectItem>
-                </SelectContent>
-              </Select>
+        <Select value={fieldFilter} onValueChange={setFieldFilter}>
+          <SelectTrigger>
+            <SelectValue placeholder="Field" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Fields</SelectItem>
+            <SelectItem value="Mechanical">Mechanical</SelectItem>
+            <SelectItem value="Electrical">Electrical</SelectItem>
+            <SelectItem value="Civil">Civil</SelectItem>
+            <SelectItem value="Architecture">Architecture</SelectItem>
+            <SelectItem value="Chemical">Chemical</SelectItem>
+            <SelectItem value="Aerospace">Aerospace</SelectItem>
+          </SelectContent>
+        </Select>
 
-              <Select value={subjectFilter} onValueChange={setSubjectFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Subject" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Subjects</SelectItem>
-                  <SelectItem value="Thermodynamics">Thermodynamics</SelectItem>
-                  <SelectItem value="Solid Mechanics">Solid Mechanics</SelectItem>
-                  <SelectItem value="Fluid Dynamics">Fluid Dynamics</SelectItem>
-                  <SelectItem value="Materials Science">Materials Science</SelectItem>
-                  <SelectItem value="Dynamics">Dynamics</SelectItem>
-                  <SelectItem value="Heat Transfer">Heat Transfer</SelectItem>
-                </SelectContent>
-              </Select>
+        <Select value={topicFilter} onValueChange={setTopicFilter}>
+          <SelectTrigger>
+            <SelectValue placeholder="Topic" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Topics</SelectItem>
+            <SelectItem value="Solid Mechanics">Solid Mechanics</SelectItem>
+            <SelectItem value="Thermodynamics">Thermodynamics</SelectItem>
+            <SelectItem value="Fluid Mechanics">Fluid Mechanics</SelectItem>
+            <SelectItem value="Heat Transfer">Heat Transfer</SelectItem>
+            <SelectItem value="Circuits">Circuits</SelectItem>
+            <SelectItem value="Structures">Structures</SelectItem>
+            <SelectItem value="Materials">Materials</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-              <Select value={industryFilter} onValueChange={setIndustryFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Industry" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Industries</SelectItem>
-                  <SelectItem value="Automotive">Automotive</SelectItem>
-                  <SelectItem value="Aerospace">Aerospace</SelectItem>
-                  <SelectItem value="Energy">Energy</SelectItem>
-                  <SelectItem value="Manufacturing">Manufacturing</SelectItem>
-                  <SelectItem value="Civil">Civil</SelectItem>
-                  <SelectItem value="Electronics">Electronics</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Results count */}
+      <div className="mb-4 text-gray-600">
+        {loading ? 'Loading...' : `Showing ${problems.length} problems`}
+      </div>
 
-        {/* Free Problems */}
-        {freeProblems.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Target className="w-5 h-5 text-success" />
-              Free Problems ({freeProblems.length})
-            </h2>
-            <div className="space-y-4">
-              {freeProblems.map((problem) => (
-                <Card
-                  key={problem.id}
-                  className="shadow-medium hover:shadow-strong transition-all duration-200"
-                >
-                  <CardHeader>
-                    <div className="flex flex-col gap-4">
-                      <div className="flex-1">
-                        <div className="flex flex-wrap items-center gap-2 mb-3">
-                          {getSubmissionStatus(problem.id) && (
-                            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
-                          )}
-                          <Badge variant={getDifficultyVariant(problem.difficulty)} className="text-xs">
-                            {problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">{problem.subject}</Badge>
-                          <Badge variant="outline" className="text-xs">{problem.industry}</Badge>
-                          <div className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground">
-                            <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-                            {problem.time_estimate}
-                          </div>
-                        </div>
-                        <CardTitle className="text-base sm:text-lg hover:text-primary cursor-pointer transition-colors">
-                          {problem.title}
-                        </CardTitle>
-                        <p className="text-sm sm:text-base text-muted-foreground mt-2">{problem.description}</p>
-                        <div className="flex items-center gap-2 mt-3 text-xs sm:text-sm text-muted-foreground">
-                          <Target className="w-3 h-3 sm:w-4 sm:h-4" />
-                          <span>Asked at: {problem.companies.join(", ")}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant={isBookmarked(problem.id) ? "default" : "outline"}
-                          size="sm"
-                          className="flex-shrink-0"
-                          onClick={(e) => handleBookmarkToggle(e, problem.id)}
-                        >
-                          <Star className={`w-4 h-4 ${isBookmarked(problem.id) ? 'fill-current' : ''}`} />
-                        </Button>
-                        <Button
-                          variant={getButtonVariant(problem.id)}
-                          onClick={() => handleProblemClick(problem.id)}
-                          className="flex-1 sm:flex-none"
-                          size="sm"
-                        >
-                          {getButtonText(problem.id)}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))}
-            </div>
+      {/* Problem cards grid */}
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {problems.map((problem) => (
+              <ProblemCard
+                key={problem.id}
+                problem={problem}
+                onContinue={handleSelectProblem}
+                onToggleStar={handleToggleStar}
+                isLocked={!problem.isFree}
+                onUpgrade={handleUpgrade}
+              />
+            ))}
           </div>
-        )}
 
-        {/* Premium Problems */}
-        {premiumProblems.length > 0 && (
-          <div>
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Lock className="w-5 h-5 text-warning" />
-              Premium Problems ({premiumProblems.length})
-            </h2>
-            <div className="space-y-4">
-              {premiumProblems.map((problem) => (
-                <Card
-                  key={problem.id}
-                  className={`shadow-medium ${
-                    !canAccessPremium
-                      ? "opacity-60"
-                      : "hover:shadow-strong transition-all duration-200"
-                  }`}
-                >
-                  <CardHeader>
-                    <div className="flex flex-col gap-4">
-                      <div className="flex-1">
-                        <div className="flex flex-wrap items-center gap-2 mb-3">
-                          {!canAccessPremium && <Lock className="w-3 h-3 sm:w-4 sm:h-4 text-warning" />}
-                          {canAccessPremium && getSubmissionStatus(problem.id) && (
-                            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
-                          )}
-                          <Badge variant={getDifficultyVariant(problem.difficulty)} className="text-xs">
-                            {problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">{problem.subject}</Badge>
-                          <Badge variant="outline" className="text-xs">{problem.industry}</Badge>
-                          <Badge variant="warning" className="text-xs">
-                            Premium
-                          </Badge>
-                          <div className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground">
-                            <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-                            {problem.time_estimate}
-                          </div>
-                        </div>
-                        <CardTitle
-                          className={`text-base sm:text-lg ${
-                            canAccessPremium ? "hover:text-primary cursor-pointer" : ""
-                          } transition-colors`}
-                        >
-                          {problem.title}
-                        </CardTitle>
-                        <p className="text-sm sm:text-base text-muted-foreground mt-2">{problem.description}</p>
-                        <div className="flex items-center gap-2 mt-3 text-xs sm:text-sm text-muted-foreground">
-                          <Target className="w-3 h-3 sm:w-4 sm:h-4" />
-                          <span>Asked at: {problem.companies.join(", ")}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant={isBookmarked(problem.id) ? "default" : "outline"}
-                          size="sm"
-                          disabled={!canAccessPremium}
-                          className="flex-shrink-0"
-                          onClick={(e) => handleBookmarkToggle(e, problem.id)}
-                        >
-                          <Star className={`w-4 h-4 ${isBookmarked(problem.id) ? 'fill-current' : ''}`} />
-                        </Button>
-                        {canAccessPremium ? (
-                          <Button
-                            variant={getButtonVariant(problem.id)}
-                            onClick={() => handleProblemClick(problem.id)}
-                            className="flex-1 sm:flex-none"
-                            size="sm"
-                          >
-                            {getButtonText(problem.id)}
-                          </Button>
-                        ) : (
-                          <Button variant="outline" className="flex-1 sm:flex-none" size="sm" asChild>
-                            <Link to="/upgrade">
-                              <Lock className="w-4 h-4 mr-1" />
-                              Upgrade
-                            </Link>
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))}
+          {problems.length === 0 && (
+            <div className="text-center py-12 text-gray-500">
+              No problems found matching your filters. Try adjusting your search criteria.
             </div>
-          </div>
-        )}
-
-        {/* Upgrade Banner */}
-        {!canAccessPremium && premiumProblems.length > 0 && (
-          <Card className="mt-8 border-warning shadow-strong bg-gradient-to-r from-warning/10 to-warning/5">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <h3 className="text-xl font-semibold mb-2">Unlock All Problems</h3>
-                <p className="text-muted-foreground mb-4">
-                  Get access to {premiumProblems.length} premium problems and advanced features
-                </p>
-                <Button variant="hero" size="lg" asChild>
-                  <Link to="/upgrade">Upgrade to Premium - $30/month</Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {problems.length === 0 && (
-          <Card className="text-center py-12">
-            <CardContent>
-              <div className="text-muted-foreground">
-                <Target className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg">No problems found matching your filters.</p>
-                <p>Try adjusting your search criteria.</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+          )}
+        </>
+      )}
       </div>
     </div>
   );
-};
-
-export default Practice;
+}

@@ -59,18 +59,18 @@ function ResponsiveDm1() {
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex gap-8 xl:gap-12 items-center">
-              <a
-                href="#practice"
+              <button
+                onClick={() => navigate('/practice')}
                 className="font-semibold text-sm hover:text-black transition-colors"
               >
                 Practice
-              </a>
-              <a
-                href="#dashboard"
+              </button>
+              <button
+                onClick={() => navigate('/dashboard')}
                 className="font-semibold text-sm hover:text-black transition-colors"
               >
                 Dashboard
-              </a>
+              </button>
               <a
                 href="#features"
                 className="font-semibold text-sm hover:text-black transition-colors"
@@ -126,12 +126,18 @@ function ResponsiveDm1() {
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="lg:hidden border-t py-4 space-y-4">
-              <a href="#practice" className="block py-2 font-semibold text-sm hover:text-black transition-colors">
+              <button
+                onClick={() => { navigate('/practice'); setMobileMenuOpen(false); }}
+                className="block w-full text-left py-2 font-semibold text-sm hover:text-black transition-colors"
+              >
                 Practice
-              </a>
-              <a href="#dashboard" className="block py-2 font-semibold text-sm hover:text-black transition-colors">
+              </button>
+              <button
+                onClick={() => { navigate('/dashboard'); setMobileMenuOpen(false); }}
+                className="block w-full text-left py-2 font-semibold text-sm hover:text-black transition-colors"
+              >
                 Dashboard
-              </a>
+              </button>
               <a href="#features" className="block py-2 font-semibold text-sm hover:text-black transition-colors">
                 Features
               </a>

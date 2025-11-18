@@ -1,541 +1,272 @@
-// src/pages/Dashboard.tsx - Complete updated version (with broadcast listener)
-import React, { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import Navbar from "@/components/ui/navbar";
+import { Card } from '@/components/ui/card';
 import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
-  Tooltip,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  BarChart,
-  Bar,
-} from "recharts";
-import { 
-  Trophy, Target, Clock, TrendingUp, BookOpen, Award, Flame, Star,
-  ArrowRight, Calendar, Users, Loader2
-} from "lucide-react";
-import { useAuth } from '@/contexts/AuthContext';
-import { AuthDialog } from '@/components/auth/AuthDialog';
-import { Link } from 'react-router-dom';
+  Legend,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+} from 'recharts';
+import { Trophy, Target, Zap, Clock, TrendingUp } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { useNavigate } from 'react-router-dom';
 import { useDashboardStats, useWeeklyProgress, useSubjectProgress } from '@/hooks/useDashboardData';
-import { supabase } from "@/lib/supabase"; // ⬅️ broadcast listener uses this
+import { useAuth } from '@/contexts/AuthContext';
 
-const Dashboard = () => {
-  const { user, loading: authLoading } = useAuth();
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-  // 🔁 When a broadcast arrives, we bump this key to remount data sections that fetch on mount
-  const [reloadKey, setReloadKey] = useState(0);
+export default function Dashboard() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
-  // Listen for "attempts_changed" broadcasts from submissionService
-  useEffect(() => {
-    if (!user) return;
+  // Fetch real data from Supabase
+  const { stats, loading: statsLoading } = useDashboardStats();
+  const { weeklyData, loading: weeklyLoading } = useWeeklyProgress();
+  const { subjectData, loading: subjectLoading } = useSubjectProgress();
 
-    const ch = supabase
-      .channel("ui-updates", { config: { broadcast: { self: true } } })
-      .on("broadcast", { event: "attempts_changed" }, (msg) => {
-        console.log('📡 Dashboard received broadcast:', msg);
-        if (msg?.payload?.userId === user.id) {
-          console.log('✅ Reloading dashboard data...');
-          setReloadKey((k) => k + 1);
-        }
-      })
-      .subscribe();
+  const loading = statsLoading || weeklyLoading || subjectLoading;
 
-    return () => {
-      supabase.removeChannel(ch);
-    };
-  }, [user?.id]);
-
-  // NOTE: hooks read data and refetch when reloadKey changes
-  const { stats, loading: statsLoading } = useDashboardStats(reloadKey);
-  const { weeklyData, loading: weeklyLoading } = useWeeklyProgress(reloadKey);
-  const { subjectData, loading: subjectLoading } = useSubjectProgress(reloadKey);
-
-  // Show loading state while checking auth
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-card">
-        <Navbar />
-        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-          <div className="text-center">
-            <Loader2 className="animate-spin h-8 w-8 mx-auto mb-4 text-primary" />
-            <p className="text-muted-foreground">Loading...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Show auth prompt if not logged in
+  // Redirect if not logged in
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-card">
-        <Navbar />
-        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-          <Card className="w-full max-w-md mx-4">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Welcome to Vectorly</CardTitle>
-              <p className="text-muted-foreground">
-                Sign in to access your personal dashboard and track your mechanical engineering interview prep progress
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <AuthDialog defaultMode="signup">
-                  <Button size="lg" className="flex-1">
-                    Get Started Free
-                  </Button>
-                </AuthDialog>
-                <AuthDialog defaultMode="login">
-                  <Button variant="outline" size="lg" className="flex-1">
-                    Sign In
-                  </Button>
-                </AuthDialog>
-              </div>
-              <div className="text-center pt-4 border-t">
-                <p className="text-sm text-muted-foreground mb-2">Join thousands of ME students</p>
-                <div className="flex items-center justify-center gap-6 text-sm">
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4 text-primary" />
-                    <span>500+ Students</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <BookOpen className="w-4 h-4 text-primary" />
-                    <span>1000+ Problems</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold mb-4">Please log in to view your dashboard</h2>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-3 bg-black text-white rounded-full hover:bg-gray-800"
+          >
+            Go to Home
+          </button>
         </div>
       </div>
     );
   }
 
-  // Custom tooltip for pie chart
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-background border rounded-lg p-3 shadow-lg">
-          <p className="font-medium">{data.name}</p>
-          <p className="text-primary">{data.value}% of study time</p>
-          <p className="text-sm text-muted-foreground">
-            {data.solved}/{data.total} problems solved
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const renderLabel = (entry: any) => (entry.value > 0 ? `${entry.value}%` : "");
-
-  function Kpi({
-    label,
-    value,
-    sub,
-    icon: Icon,
-    trend,
-    loading,
-  }: {
-    label: string;
-    value: string;
-    sub?: string;
-    icon: any;
-    trend?: "up" | "down" | "neutral";
-    loading?: boolean;
-  }) {
-    return (
-      <Card className="shadow-medium hover:shadow-strong transition-all duration-200">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm text-muted-foreground">{label}</CardTitle>
-            <Icon className="w-4 h-4 text-primary" />
-          </div>
-        </CardHeader>
-        <CardContent className="flex items-end gap-2">
-          {loading ? (
-            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-          ) : (
-            <>
-              <div className="text-3xl font-semibold">{value}</div>
-              {sub && (
-                <div
-                  className={`text-xs flex items-center gap-1 ${
-                    trend === "up"
-                      ? "text-success"
-                      : trend === "down"
-                      ? "text-destructive"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {trend === "up" && <TrendingUp className="w-3 h-3" />}
-                  {sub}
-                </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Mock industry data (still placeholder)
-  const industryPrep = [
-    { industry: "Automotive", problems: 0, hours: 0 },
-    { industry: "Aerospace", problems: 0, hours: 0 },
-    { industry: "Energy", problems: 0, hours: 0 },
-    { industry: "Manufacturing", problems: 0, hours: 0 },
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-card">
-      <Navbar />
-      
-      <div className="container mx-auto px-4 py-8 space-y-6">
-        {/* Welcome Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Welcome back, {user.name}!</h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
-              {user.university && user.major ? (
-                <>
-                  {user.major} • {user.university} • Class of {user.graduation_year}
-                </>
-              ) : (
-                "Ready to ace your mechanical engineering interviews?"
-              )}
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button variant="outline" className="w-full sm:w-auto" size="sm">
-              <Trophy className="mr-2 h-4 w-4"/>
-              <span className="hidden sm:inline">View Achievements</span>
-              <span className="sm:hidden">Achievements</span>
-            </Button>
-            <Button variant="hero" className="w-full sm:w-auto" size="sm">
-              <Target className="mr-2 h-4 w-4"/>
-              <span className="hidden sm:inline">Set Goals</span>
-              <span className="sm:hidden">Goals</span>
-            </Button>
-          </div>
-        </div>
-
-        {/* KPIs */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          <Kpi 
-            label="Problems Solved" 
-            value={stats.totalSolved.toString()} 
-            sub={stats.weeklyProgress > 0 ? `↑ ${stats.weeklyProgress} this week` : "Start solving!"} 
-            icon={Target}
-            trend={stats.weeklyProgress > 0 ? "up" : "neutral"}
-            loading={statsLoading}
-          />
-          <Kpi 
-            label="Current Streak" 
-            value={`${stats.currentStreak}d`} 
-            sub={stats.currentStreak > 0 ? `🔥 Keep it up!` : "Start your streak!"} 
-            icon={Flame}
-            loading={statsLoading}
-          />
-          <Kpi 
-            label="Accuracy Rate" 
-            value={`${stats.accuracy}%`} 
-            sub={stats.totalSolved > 0 ? "Great progress!" : "No attempts yet"} 
-            icon={TrendingUp}
-            loading={statsLoading}
-          />
-          <Kpi 
-            label="Study Hours" 
-            value={`${stats.totalHours}h`} 
-            sub="This month" 
-            icon={Clock}
-            loading={statsLoading}
-          />
-        </div>
-
-        {/* Weekly Goal Progress */}
-        <Card className="shadow-medium">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Star className="w-5 h-5 text-warning" />
-                Weekly Goal Progress
-              </CardTitle>
-              <Badge variant="outline">{stats.weeklyProgress}/{stats.weeklyGoal} problems</Badge>
+    <div className="min-h-screen bg-gray-50">
+      {/* Navigation Bar */}
+      <nav className="bg-white border-b sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-2">
+              <svg
+                className="w-8 h-8 text-black"
+                fill="currentColor"
+                viewBox="0 0 53 48"
+              >
+                <path d="M45.0379 0C51.1627 0 54.9872 6.62654 51.9177 11.9204L41.0495 30.6637C40.5418 31.5393 39.4195 31.8381 38.5429 31.331C37.6662 30.8239 37.3671 29.703 37.8748 28.8273L48.743 10.084C50.3961 7.23303 48.3364 3.6643 45.0379 3.6643C43.5102 3.66432 42.0983 4.47729 41.3327 5.79767L30.3497 24.7408C29.249 26.6393 29.2454 28.9802 30.3405 30.882L33.3731 36.1488C34.7788 38.59 34.7787 41.5937 33.3729 44.0348C30.3294 49.3195 22.6963 49.3223 19.6489 44.0398L1.06662 11.8288C-1.96768 6.56892 1.83324 0 7.91101 0C10.7297 1.871e-05 13.3349 1.5002 14.7472 3.93668L20.1168 13.2004C20.6243 14.0761 20.325 15.197 19.4483 15.704C18.5715 16.211 17.4493 15.912 16.9417 15.0363L11.5721 5.77263C10.8157 4.46778 9.42057 3.66432 7.91101 3.6643C4.65598 3.6643 2.62028 7.18238 4.2453 9.99937L22.8276 42.2104C24.463 45.0453 28.5594 45.0438 30.1927 42.2077C30.9472 40.8976 30.9473 39.2856 30.1929 37.9755L27.1603 32.7089C25.412 29.6726 25.4177 25.9355 27.1751 22.9044L38.1581 3.96131C39.5796 1.50956 42.2013 1.47685e-05 45.0379 0Z" />
+              </svg>
+              <h1 className="text-xl font-semibold">Vectorly</h1>
             </div>
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm text-muted-foreground">Loading progress...</span>
-              </div>
-            ) : (
-              <>
-                <Progress value={(stats.weeklyProgress / stats.weeklyGoal) * 100} className="h-3 mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  {stats.weeklyGoal - stats.weeklyProgress > 0 
-                    ? `${stats.weeklyGoal - stats.weeklyProgress} problems remaining to reach your weekly goal`
-                    : "🎉 Congratulations! You've reached your weekly goal!"
-                  }
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <Card className="xl:col-span-2 shadow-medium">
-            <CardHeader>
-              <CardTitle className="text-lg sm:text-xl">Weekly Performance</CardTitle>
-            </CardHeader>
-            <CardContent className="h-64 sm:h-72">
-              {weeklyLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={weeklyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="day" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line 
-                      type="monotone" 
-                      dataKey="attempted" 
-                      stroke="#8884d8" 
-                      strokeWidth={2} 
-                      name="Attempted"
-                      dot={{ r: 4 }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="solved" 
-                      stroke="#82ca9d" 
-                      strokeWidth={2} 
-                      name="Solved"
-                      dot={{ r: 4 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
+            <div className="flex gap-6 items-center">
+              <button
+                onClick={() => navigate('/')}
+                className="font-semibold text-sm hover:text-black transition-colors"
+              >
+                Home
+              </button>
+              <button
+                onClick={() => navigate('/practice')}
+                className="font-semibold text-sm hover:text-black transition-colors"
+              >
+                Practice
+              </button>
+              <button
+                className="font-semibold text-sm text-black border-b-2 border-black"
+              >
+                Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
 
-          {/* Subject Focus Pie */}
-          <Card className="shadow-medium">
-            <CardHeader>
-              <CardTitle className="text-lg sm:text-xl">Subject Focus</CardTitle>
-            </CardHeader>
-            <CardContent className="h-64 sm:h-72">
-              {subjectLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                </div>
-              ) : subjectData.length > 0 && subjectData.some(item => item.value > 0) ? (
-                <>
-                  <ResponsiveContainer width="100%" height="70%">
-                    <PieChart>
-                      <Pie
-                        data={subjectData.filter(item => item.value > 0)}
-                        cx="50%"
-                        cy="45%"
-                        outerRadius={70}
-                        dataKey="value"
-                        label={renderLabel}
-                        labelLine={false}
-                      >
-                        {subjectData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<CustomTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="grid grid-cols-2 gap-1 text-xs">
-                    {subjectData.filter(item => item.value > 0).map((item) => (
-                      <div key={item.name} className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
-                        <span className="truncate">{item.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center">
-                  <BookOpen className="w-12 h-12 text-muted-foreground/50 mb-2" />
-                  <p className="text-sm text-muted-foreground">No study data yet</p>
-                  <p className="text-xs text-muted-foreground">Start solving problems to see your progress!</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+      {/* Page Content */}
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="mb-8">
+          <h1 className="mb-2">Dashboard</h1>
+          <p className="text-gray-600">Track your progress and mastery across engineering topics</p>
         </div>
 
-        {/* Subject Progress Detail */}
-        <Card className="shadow-medium">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5" />
-              Subject Mastery Progress
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {subjectLoading ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm text-muted-foreground">Loading subject progress...</span>
-              </div>
-            ) : subjectData.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {subjectData.map((subject) => (
-                  <div key={subject.name} className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-medium">{subject.name}</span>
-                      <span className="text-muted-foreground">{subject.solved}/{subject.total}</span>
-                    </div>
-                    <Progress 
-                      value={subject.total > 0 ? (subject.solved / subject.total) * 100 : 0} 
-                      className="h-2" 
-                    />
-                    <div className="text-xs text-muted-foreground">
-                      {subject.total > 0 
-                        ? `${Math.round((subject.solved / subject.total) * 100)}% completed`
-                        : 'No problems attempted yet'
-                      }
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Target className="w-12 h-12 text-muted-foreground/50 mx-auto mb-2" />
-                <p className="text-muted-foreground">No progress data available yet</p>
-                <Button asChild className="mt-4">
-                  <Link to="practice">Start Practicing</Link>
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* Loading State */}
+      {loading && (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+        </div>
+      )}
 
-        {/* Industry Preparation (placeholder) */}
-        <Card className="shadow-medium">
-          <CardHeader>
-            <CardTitle>Industry Preparation</CardTitle>
-            <p className="text-sm text-muted-foreground">Coming soon - practice problems by industry focus</p>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={industryPrep}>
+      {/* Stats Cards */}
+      {!loading && (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gray-600">Current Streak</span>
+                <Zap className="w-5 h-5 text-orange-500" />
+              </div>
+              <div className="text-3xl mb-1">{stats.currentStreak}</div>
+              <p className="text-sm text-gray-500">days in a row</p>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gray-600">Problems Solved</span>
+                <Trophy className="w-5 h-5 text-yellow-500" />
+              </div>
+              <div className="text-3xl mb-1">{stats.totalSolved}</div>
+              <p className="text-sm text-gray-500">total completed</p>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gray-600">Accuracy Rate</span>
+                <Target className="w-5 h-5 text-green-500" />
+              </div>
+              <div className="text-3xl mb-1">{stats.accuracy}%</div>
+              <p className="text-sm text-gray-500">correct solutions</p>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gray-600">Study Hours</span>
+                <Clock className="w-5 h-5 text-blue-500" />
+              </div>
+              <div className="text-3xl mb-1">{stats.totalHours}</div>
+              <p className="text-sm text-gray-500">total hours</p>
+            </Card>
+          </div>
+
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Weekly Progress */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <TrendingUp className="w-5 h-5" />
+              <h3>Weekly Progress</h3>
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="industry" />
+                <XAxis dataKey="day" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="problems" fill="#8884d8" name="Problems Solved" />
+                <Legend />
+                <Bar dataKey="attempted" fill="#9ca3af" radius={[8, 8, 0, 0]} name="Attempted" />
+                <Bar dataKey="solved" fill="#3b82f6" radius={[8, 8, 0, 0]} name="Solved" />
               </BarChart>
             </ResponsiveContainer>
-          </CardContent>
+          </Card>
+
+          {/* Subject Distribution */}
+          <Card className="p-6">
+            <h3 className="mb-6">Subject Distribution</h3>
+            {subjectData.length === 0 || subjectData.every(s => s.value === 0) ? (
+              <div className="flex items-center justify-center h-[300px] text-gray-400">
+                <div className="text-center">
+                  <p className="text-lg mb-2">No data yet</p>
+                  <p className="text-sm">Start solving problems to see your subject distribution</p>
+                </div>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={subjectData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value }) => value > 0 ? `${name}: ${value}%` : ''}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {subjectData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </Card>
+        </div>
+
+        {/* Subject Mastery Radar Chart */}
+        <Card className="p-6 mb-8">
+          <h3 className="mb-6">Subject Mastery</h3>
+          {subjectData.length === 0 || subjectData.every(s => s.total === 0) ? (
+            <div className="flex items-center justify-center h-[400px] text-gray-400">
+              <div className="text-center">
+                <p className="text-lg mb-2">No mastery data yet</p>
+                <p className="text-sm">Solve problems to build your subject mastery</p>
+              </div>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={400}>
+              <RadarChart data={subjectData.map(s => ({
+                subject: s.name,
+                mastery: s.total > 0 ? Math.round((s.solved / s.total) * 100) : 0
+              }))}>
+                <PolarGrid />
+                <PolarAngleAxis dataKey="subject" />
+                <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                <Radar
+                  name="Mastery"
+                  dataKey="mastery"
+                  stroke="#3b82f6"
+                  fill="#3b82f6"
+                  fillOpacity={0.6}
+                />
+                <Tooltip />
+                <Legend />
+              </RadarChart>
+            </ResponsiveContainer>
+          )}
         </Card>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <Card className="shadow-medium hover:shadow-strong transition-all cursor-pointer group">
-            <CardContent className="pt-6 text-center">
-              <Target className="w-8 h-8 text-primary mx-auto mb-2 group-hover:scale-110 transition-transform" />
-              <h3 className="font-semibold mb-1 text-base">Practice Problems</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-3">Solve new interview questions</p>
-              <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
-                <Link to="practice">
-                  Start Practicing <ArrowRight className="ml-1 w-3 h-3" />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-medium hover:shadow-strong transition-all cursor-pointer group">
-            <CardContent className="pt-6 text-center">
-              <BookOpen className="w-8 h-8 text-primary mx-auto mb-2 group-hover:scale-110 transition-transform" />
-              <h3 className="font-semibold mb-1 text-base">Study Theory</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-3">Review fundamental concepts</p>
-              <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                Coming Soon
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-medium hover:shadow-strong transition-all cursor-pointer group">
-            <CardContent className="pt-6 text-center">
-              <Trophy className="w-8 h-8 text-primary mx-auto mb-2 group-hover:scale-110 transition-transform" />
-              <h3 className="font-semibold mb-1 text-base">Mock Interview</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-3">Practice with AI interviewer</p>
-              <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                Coming Soon
-              </Button>
-            </CardContent>
-          </Card>
+        {/* Subject Details */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+          {subjectData.map((subject) => {
+            const mastery = subject.total > 0 ? Math.round((subject.solved / subject.total) * 100) : 0;
+            return (
+              <Card key={subject.name} className="p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h3>{subject.name}</h3>
+                  <span className="text-2xl">{mastery}%</span>
+                </div>
+                <div className="text-sm text-gray-500 mb-2">
+                  {subject.solved} solved / {subject.total} attempted
+                </div>
+                <Progress value={mastery} className="mb-2" />
+                <p className="text-sm text-gray-500">
+                  {mastery < 30
+                    ? 'Beginner - Keep practicing!'
+                    : mastery < 60
+                    ? 'Intermediate - Good progress!'
+                    : mastery < 80
+                    ? 'Advanced - Almost there!'
+                    : 'Expert - Well done!'}
+                </p>
+              </Card>
+            );
+          })}
         </div>
-
-        {/* Achievement Highlights - empty state */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="shadow-medium border-l-4 border-l-muted">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-muted/10 rounded-lg">
-                  <Trophy className="w-6 h-6 text-muted-foreground" />
-                </div>
-                <div>
-                  <div className="font-semibold text-muted-foreground">Ready to Start!</div>
-                  <div className="text-sm text-muted-foreground">Solve your first problem to earn achievements</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-medium border-l-4 border-l-primary">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Target className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <div className="font-semibold">Set Your Goals</div>
-                  <div className="text-sm text-muted-foreground">Customize your weekly problem-solving target</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-medium border-l-4 border-l-accent">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-accent/10 rounded-lg">
-                  <BookOpen className="w-6 h-6 text-accent" />
-                </div>
-                <div>
-                  <div className="font-semibold">Learn & Grow</div>
-                  <div className="text-sm text-muted-foreground">Track progress across all ME subjects</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        </>
+      )}
       </div>
     </div>
   );
-};
-
-export default Dashboard;
+}

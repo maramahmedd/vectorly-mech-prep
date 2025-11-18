@@ -1,927 +1,374 @@
-// src/pages/PracticeInterface.tsx (Updated with all fixes)
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
-import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import Navbar from "@/components/ui/navbar";
-import { useAuth } from "@/contexts/AuthContext";
-import { submissionService } from "@/services/submissionService";
-import { getProblemById, type DbProblem } from "@/services/problemService";
-import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Problem } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Whiteboard } from '@/components/Whiteboard';
+import { Calculator } from '@/components/Calculator';
 import {
-  AlarmClock, BookText, Calculator, Check, ChevronRight, ChevronLeft, ClipboardCopy, Clock, FileQuestion,
-  Flag, HelpCircle, Highlighter, Info, Lightbulb, Loader2, Mic, MicOff, NotebookPen, Play,
-  Save, Settings, Sparkles, Square, StopCircle, TimerReset, Trash2, Upload, Home, Star,
-  Target, TrendingUp, ChevronDown, Lock, Maximize2, Minimize2
-} from "lucide-react";
+  ArrowLeft,
+  Play,
+  Pause,
+  Lightbulb,
+  Save,
+  SkipForward,
+  CheckCircle,
+  AlertCircle,
+  Calculator as CalculatorIcon,
+} from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { submissionService } from '@/services/submissionService';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import { getProblemById } from '@/services/problemService';
 
-// Countdown timer hook
-function useCountdown(minutes = 45) {
-  const [secondsLeft, setSecondsLeft] = useState(minutes * 60);
-  const [running, setRunning] = useState(true);
-  
-  useEffect(() => {
-    if (!running) return;
-    const timer = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
-    return () => clearInterval(timer);
-  }, [running]);
-  
-  const mins = Math.floor(secondsLeft / 60);
-  const secs = (secondsLeft % 60).toString().padStart(2, "0");
-  return { secondsLeft, display: `${mins}:${secs}`, running, setRunning, setSecondsLeft };
-}
-
-// Whiteboard Canvas Component
-const Whiteboard = ({
-  height = 280,
-  isFullscreen = false,
-  onToggleFullscreen = () => {},
-  savedImageData = null,
-  onSaveImageData = () => {}
-}: {
-  height?: number;
-  isFullscreen?: boolean;
-  onToggleFullscreen?: () => void;
-  savedImageData?: string | null;
-  onSaveImageData?: (data: string) => void;
-}) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [drawing, setDrawing] = useState(false);
-  const [lineWidth, setLineWidth] = useState(3);
-  const [erase, setErase] = useState(false);
-
-  // Initialize canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-
-    // Restore saved image data if available
-    if (savedImageData) {
-      const img = new Image();
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, rect.width, rect.height);
-      };
-      img.src = savedImageData;
-    }
-  }, [isFullscreen, savedImageData]);
-
-  const handlePointer = (type: string, e: React.MouseEvent | React.TouchEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const rect = canvas.getBoundingClientRect();
-    let x: number, y: number;
-
-    // Support both mouse and touch events
-    if ('touches' in e) {
-      if (e.touches.length === 0) return;
-      x = e.touches[0].clientX - rect.left;
-      y = e.touches[0].clientY - rect.top;
-    } else {
-      x = e.clientX - rect.left;
-      y = e.clientY - rect.top;
-    }
-
-    if (type === "down") {
-      setDrawing(true);
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-    } else if (type === "move" && drawing) {
-      ctx.globalCompositeOperation = erase ? "destination-out" : "source-over";
-      ctx.lineWidth = lineWidth;
-      ctx.strokeStyle = "#0f172a";
-      ctx.lineTo(x, y);
-      ctx.stroke();
-    } else if (type === "up") {
-      setDrawing(false);
-    }
-  };
-
-  const clearBoard = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  };
-
-  const saveCanvasData = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const dataUrl = canvas.toDataURL();
-    onSaveImageData(dataUrl);
-  };
-
-  const handleToggleFullscreen = () => {
-    saveCanvasData();
-    onToggleFullscreen();
-  };
-
-  return (
-    <div className="w-full h-full flex flex-col">
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
-        <Badge variant="outline" className="text-xs">Whiteboard</Badge>
-        <div className="flex items-center gap-2">
-          <Highlighter className="w-4 h-4" />
-          <Slider
-            value={[lineWidth]}
-            max={10}
-            min={1}
-            step={1}
-            onValueChange={(v) => setLineWidth(v[0])}
-            className="w-16 sm:w-20"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Switch id={`erase-${isFullscreen ? 'fs' : 'normal'}`} checked={erase} onCheckedChange={setErase} />
-          <label htmlFor={`erase-${isFullscreen ? 'fs' : 'normal'}`} className="text-xs text-muted-foreground">
-            <span className="hidden sm:inline">Eraser</span>
-            <span className="sm:hidden">Erase</span>
-          </label>
-        </div>
-        <Button size="sm" variant="outline" onClick={clearBoard}>
-          <Trash2 className="w-3 h-3 mr-1"/>
-          <span className="hidden sm:inline">Clear</span>
-        </Button>
-        {!isFullscreen && (
-          <Button size="sm" variant="outline" onClick={handleToggleFullscreen}>
-            <Maximize2 className="w-3 h-3 mr-1"/>
-            <span className="hidden sm:inline">Expand</span>
-          </Button>
-        )}
-      </div>
-      <div className={`rounded-lg border-2 border-dashed border-muted bg-background ${isFullscreen ? 'flex-1' : ''}`}>
-        <canvas
-          ref={canvasRef}
-          className="w-full rounded-lg cursor-crosshair touch-none"
-          style={{ height: isFullscreen ? '100%' : `${height}px` }}
-          onMouseDown={(e) => handlePointer("down", e)}
-          onMouseMove={(e) => handlePointer("move", e)}
-          onMouseUp={(e) => handlePointer("up", e)}
-          onMouseLeave={(e) => handlePointer("up", e)}
-          onTouchStart={(e) => { e.preventDefault(); handlePointer("down", e); }}
-          onTouchMove={(e) => { e.preventDefault(); handlePointer("move", e); }}
-          onTouchEnd={(e) => { e.preventDefault(); handlePointer("up", e); }}
-        />
-      </div>
-    </div>
-  );
-};
-
-// Vectorly Question Bank
-const VECTORLY_QUESTIONS = [
-  {
-    id: "ve-thermo-001",
-    type: "Technical",
-    subject: "Thermodynamics",
-    industry: "Automotive",
-    difficulty: "Medium",
-    title: "Heat Engine Efficiency Analysis",
-    prompt: "Design a heat engine operating between two thermal reservoirs at 800K and 300K. Calculate the maximum theoretical efficiency and explain how real-world factors would affect this efficiency in an automotive application. Consider practical limitations and propose improvements.",
-    timeLimit: 30,
-    companies: ["Tesla", "Ford", "GM"],
-    hints: [
-      "Start with the Carnot efficiency formula for maximum theoretical efficiency",
-      "Consider friction, heat losses, and material limitations in real engines", 
-      "Think about automotive-specific constraints like weight, cost, and emissions"
-    ],
-    isPremium: false
-  },
-  {
-    id: "ve-solid-002", 
-    type: "Technical",
-    subject: "Solid Mechanics",
-    industry: "Aerospace",
-    difficulty: "Medium",
-    title: "Beam Deflection Under Load",
-    prompt: "A 1.5m cantilever beam with rectangular cross-section (30mm × 60mm) supports a 500N load at the tip. Calculate the maximum deflection and stress. If the deflection must be under 3mm, propose design changes and discuss trade-offs.",
-    timeLimit: 25,
-    companies: ["Boeing", "SpaceX", "Lockheed Martin"],
-    hints: [
-      "Use the cantilever beam deflection formula: δ = FL³/(3EI)",
-      "Calculate moment of inertia: I = bh³/12 for rectangular section",
-      "Consider material properties, geometry changes, and weight implications"
-    ],
-    isPremium: false
-  },
-  {
-    id: "ve-fluids-003",
-    type: "Technical", 
-    subject: "Fluid Mechanics",
-    industry: "Energy",
-    difficulty: "Hard",
-    title: "Turbine Design Challenge",
-    prompt: "Design a small wind turbine for residential use. Estimate the power output for 15 m/s wind speed, determine optimal blade geometry, and address practical challenges like noise, maintenance, and grid integration.",
-    timeLimit: 40,
-    companies: ["GE", "Siemens", "Vestas"],
-    hints: [
-      "Apply Betz limit and actuator disk theory for maximum theoretical power",
-      "Consider tip-speed ratio and blade angle optimization",
-      "Think about real-world constraints: noise regulations, maintenance access, electrical integration"
-    ],
-    isPremium: true
-  },
-  {
-    id: "ve-materials-004",
-    type: "Technical",
-    subject: "Materials Science", 
-    industry: "Manufacturing",
-    difficulty: "Medium",
-    title: "Material Selection for High Temperature",
-    prompt: "Select materials for a heat exchanger operating at 450°C with aggressive chemical exposure. Compare at least three material options, considering cost, performance, and manufacturing constraints.",
-    timeLimit: 20,
-    companies: ["3M", "Caterpillar", "John Deere"],
-    hints: [
-      "Consider high-temperature strength, corrosion resistance, and thermal conductivity",
-      "Evaluate stainless steels, superalloys, and ceramic options",
-      "Factor in material cost, availability, and manufacturing processes"
-    ],
-    isPremium: true
-  }
-];
-
-// Hint System Component
-function HintSystem({ hints = [] }) {
-  const [revealedHints, setRevealedHints] = useState(0);
-  
-  const revealNext = () => setRevealedHints(prev => Math.min(hints.length, prev + 1));
-  const resetHints = () => setRevealedHints(0);
-  
-  return (
-    <Card className="shadow-medium">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Lightbulb className="w-4 h-4 text-warning" />
-            Hints ({revealedHints}/{hints.length})
-          </CardTitle>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={revealNext} disabled={revealedHints >= hints.length}>
-              <ChevronRight className="w-3 h-3 mr-1"/>Reveal
-            </Button>
-            <Button size="sm" variant="ghost" onClick={resetHints}>
-              <TimerReset className="w-3 h-3 mr-1"/>Reset
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {revealedHints === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Use hints progressively to guide your solution approach
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {hints.slice(0, revealedHints).map((hint, index) => (
-              <li key={index} className="flex items-start gap-2 text-sm">
-                <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">
-                  {index + 1}
-                </span>
-                <span>{hint}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// Quick Calculator Component
-function QuickCalculator() {
-  const [expression, setExpression] = useState("");
-  const [result, setResult] = useState("");
-  
-  const calculate = () => {
-    try {
-      // Simple safe evaluation (numbers and basic operators only)
-      const sanitized = expression.replace(/[^0-9+\-*/(). ]/g, "");
-      const calculated = Function(`"use strict"; return (${sanitized})`)();
-      setResult(calculated.toString());
-    } catch (error) {
-      setResult("Error");
-    }
-  };
-
-  return (
-    <Card className="shadow-medium">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Calculator className="w-4 h-4" />
-          Quick Calculator
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex gap-2">
-          <Input 
-            value={expression}
-            onChange={(e) => setExpression(e.target.value)}
-            placeholder="e.g., (500*1.5^3)/(3*210e9*1e-6)"
-            className="text-sm"
-          />
-          <Button size="sm" onClick={calculate}>=</Button>
-        </div>
-        {result && (
-          <div className="text-sm">
-            <span className="text-muted-foreground">Result: </span>
-            <span className="font-mono font-medium">{result}</span>
-          </div>
-        )}
-        <p className="text-xs text-muted-foreground">
-          Use SI units for consistency (N, m, Pa, W, °C)
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
-// Quick Reference Component (Now Collapsible)
-function QuickReference() {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <Card className="shadow-medium">
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleTrigger asChild>
-          <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
-            <CardTitle className="text-sm flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <BookText className="w-4 h-4" />
-                Quick Reference
-              </div>
-              <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-            </CardTitle>
-          </CardHeader>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <CardContent>
-            <div className="space-y-3 text-xs">
-              <div>
-                <h4 className="font-medium mb-1">Common Formulas:</h4>
-                <ul className="space-y-1 text-muted-foreground font-mono">
-                  <li>• σ = F/A (stress)</li>
-                  <li>• δ = FL/(AE) (elongation)</li>
-                  <li>• I = bh³/12 (rect. moment)</li>
-                  <li>• P = ½ρAv³Cp (wind power)</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-medium mb-1">SI Units:</h4>
-                <ul className="space-y-1 text-muted-foreground">
-                  <li>• Force: N (Newton)</li>
-                  <li>• Pressure: Pa (Pascal)</li>
-                  <li>• Energy: J (Joule)</li>
-                  <li>• Power: W (Watt)</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </CollapsibleContent>
-      </Collapsible>
-    </Card>
-  );
-}
-
-// Main Practice Interface Component
-const PracticeInterface = () => {
-  const { user } = useAuth();
+export default function PracticeInterface() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+  const [problem, setProblem] = useState<Problem | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [initialTime, setInitialTime] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [answer, setAnswer] = useState('');
+  const [notes, setNotes] = useState('');
+  const [hintsRevealed, setHintsRevealed] = useState<number>(0);
+  const [activeTab, setActiveTab] = useState('whiteboard');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [flagged, setFlagged] = useState(false);
-  const [hintsUsed, setHintsUsed] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [solutionDialogOpen, setSolutionDialogOpen] = useState(false);
-
-  const [notes, setNotes] = useState("");
-  const [notesLoaded, setNotesLoaded] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
-
-  // Whiteboard fullscreen state
-  const [whiteboardFullscreen, setWhiteboardFullscreen] = useState(false);
-  const [whiteboardImageData, setWhiteboardImageData] = useState<string | null>(null);
-
-  // Dynamic problem loading from Supabase
-  const [currentQuestion, setCurrentQuestion] = useState<DbProblem | null>(null);
-  const [problemLoading, setProblemLoading] = useState(true);
-
-  const { display, running, setRunning, secondsLeft, setSecondsLeft } = useCountdown(45);
-
-  // Get problem ID from URL params
-  const problemId = searchParams.get('problem');
-  const progress = 0; // Can be updated if you want to track multiple problems
-
-  // Fetch problem from Supabase when problemId changes
   useEffect(() => {
     const loadProblem = async () => {
+      const problemId = sessionStorage.getItem('selectedProblemId');
       if (!problemId) {
-        setProblemLoading(false);
+        navigate('/practice');
         return;
       }
 
       try {
-        setProblemLoading(true);
-        const problem = await getProblemById(problemId);
-        if (problem) {
-          setCurrentQuestion(problem);
-          // Set timer based on problem's time limit
-          if (problem.time_limit_minutes) {
-            setSecondsLeft(problem.time_limit_minutes * 60);
-          }
-        } else {
+        setLoading(true);
+        const dbProblem = await getProblemById(problemId);
+
+        if (!dbProblem) {
           console.error('Problem not found:', problemId);
+          toast.error('Problem not found');
+          navigate('/practice');
+          return;
+        }
+
+        // Convert DbProblem to Problem format
+        const mappedProblem: Problem = {
+          id: dbProblem.id,
+          title: dbProblem.title,
+          description: dbProblem.description,
+          detailedProblem: dbProblem.prompt || dbProblem.description,
+          difficulty: dbProblem.difficulty.charAt(0).toUpperCase() + dbProblem.difficulty.slice(1) as any,
+          topic: dbProblem.subject as any,
+          field: dbProblem.industry as any,
+          timeToSolve: dbProblem.time_limit_minutes || 30,
+          companies: dbProblem.companies || [],
+          isFree: !dbProblem.is_premium,
+          isStarred: false,
+          hints: dbProblem.hints || [],
+        };
+
+        setProblem(mappedProblem);
+        const initialSeconds = mappedProblem.timeToSolve * 60;
+        setTimeRemaining(initialSeconds);
+        setInitialTime(initialSeconds);
+
+        // Mark as attempted when user starts
+        if (user) {
+          submissionService.markAsAttempted(problemId).catch(console.error);
         }
       } catch (error) {
         console.error('Error loading problem:', error);
+        toast.error('Failed to load problem');
+        navigate('/practice');
       } finally {
-        setProblemLoading(false);
+        setLoading(false);
       }
     };
 
     loadProblem();
-  }, [problemId]);
+  }, [navigate, user]);
 
-  // Load existing submission data
   useEffect(() => {
-    if (user && currentQuestion) {
-      loadSubmissionData();
-    }
-  }, [user, currentQuestion]);
+    if (isPaused || timeRemaining <= 0 || !problem) return;
+    const timer = setInterval(() => {
+      setTimeRemaining((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isPaused, timeRemaining, problem]);
 
-  const loadSubmissionData = async () => {
-    if (!user || !currentQuestion) return;
-    
-    try {
-      console.log('Loading submission data for problem:', currentQuestion.id);
-      const submission = await submissionService.getUserSubmissionForProblem(user.id, currentQuestion.id);
-      if (submission) {
-        console.log('Found existing submission:', submission);
-        setNotes(submission.notes || "");
-        setHintsUsed(submission.hints_used || 0);
-        // Update timer if there's previous time spent
-        if (submission.time_spent_minutes > 0 && currentQuestion.time_limit_minutes) {
-          const remainingTime = Math.max(0, currentQuestion.time_limit_minutes * 60 - submission.time_spent_minutes * 60);
-          setSecondsLeft(remainingTime);
-        }
-      }
-      setNotesLoaded(true);
-    } catch (error) {
-      console.error('Error loading submission data:', error);
-      setNotesLoaded(true);
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const revealNextHint = () => {
+    if (problem && hintsRevealed < problem.hints.length) {
+      setHintsRevealed(hintsRevealed + 1);
     }
   };
 
-  // Auto-save notes
-  // Update the auto-save notes effect:
-useEffect(() => {
-  // Don't auto-save until notes are loaded and there's actual content
-  if (!notesLoaded || !user || !currentQuestion || !notes.trim()) {
-    return;
-  }
+  const handleSave = async () => {
+    if (!problem || !user) {
+      toast.error('Please log in to save your progress');
+      return;
+    }
 
-  const saveNotes = async () => {
     try {
-      setSaveStatus('saving');
-      console.log('Auto-saving notes for problem:', currentQuestion.id);
-      
+      const timeSpentMinutes = Math.round((initialTime - timeRemaining) / 60);
       await submissionService.submitAnswer({
-        problem_id: currentQuestion.id,
+        problem_id: problem.id,
         status: 'attempted',
-        user_answer: notes,
-        time_spent_minutes: Math.max(1, Math.round(((currentQuestion.time_limit_minutes || 30) * 60 - secondsLeft) / 60)),
-        hints_used: hintsUsed,
-        notes: notes
+        user_answer: answer,
+        notes,
+        time_spent_minutes: timeSpentMinutes,
+        hints_used: hintsRevealed,
       });
-      
-      setSaveStatus('saved');
-      console.log('Notes auto-saved successfully');
+      toast.success('Progress saved!');
     } catch (error) {
-      console.error('Error auto-saving notes:', error);
-      setSaveStatus('unsaved');
+      console.error('Error saving progress:', error);
+      toast.error('Failed to save progress');
     }
   };
 
-  setSaveStatus('unsaved');
-  const timeoutId = setTimeout(saveNotes, 2000); // Auto-save after 2 seconds of inactivity
-  return () => clearTimeout(timeoutId);
-}, [notes, user, currentQuestion, hintsUsed, notesLoaded]); 
+  const handleSkip = async () => {
+    if (!confirm('Are you sure you want to skip this problem?')) return;
 
-  const nextQuestion = () => setCurrentIndex(prev => prev + 1);
-  const prevQuestion = () => setCurrentIndex(prev => Math.max(0, prev - 1));
-  const resetTimer = () => setSecondsLeft((currentQuestion?.time_limit_minutes || 30) * 60);
+    if (problem && user) {
+      try {
+        const timeSpentMinutes = Math.round((initialTime - timeRemaining) / 60);
+        await submissionService.submitAnswer({
+          problem_id: problem.id,
+          status: 'skipped',
+          time_spent_minutes: timeSpentMinutes,
+          hints_used: hintsRevealed,
+        });
+      } catch (error) {
+        console.error('Error saving skip:', error);
+      }
+    }
+    navigate('/practice');
+  };
 
-  const handleSubmitSolution = async (status: 'solved' | 'partially_solved' | 'skipped') => {
-    if (!user || !currentQuestion) return;
-    
+  const handleSubmit = async () => {
+    if (!answer.trim()) {
+      toast.error('Please enter your answer before submitting.');
+      return;
+    }
+
+    if (!problem || !user) {
+      toast.error('Please log in to submit');
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
-      setLoading(true);
-      
+      const timeSpentMinutes = Math.round((initialTime - timeRemaining) / 60);
       await submissionService.submitAnswer({
-        problem_id: currentQuestion.id,
-        status: status,
-        user_answer: notes,
-        time_spent_minutes: Math.round(((currentQuestion.time_limit_minutes || 30) * 60 - secondsLeft) / 60),
-        hints_used: hintsUsed,
-        notes: notes
+        problem_id: problem.id,
+        status: 'solved', // In real app, this would be evaluated
+        user_answer: answer,
+        notes,
+        time_spent_minutes: timeSpentMinutes,
+        hints_used: hintsRevealed,
       });
-      
-      // Navigate back to practice page
-      navigate('/practice');
+      toast.success('Solution submitted successfully!');
+      setTimeout(() => navigate('/practice'), 1500);
     } catch (error) {
-      console.error('Error submitting solution:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error submitting answer:', error);
+      toast.error('Failed to submit solution');
+      setIsSubmitting(false);
     }
   };
 
-  // Redirect if not authenticated
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gradient-card">
-        <Navbar />
-        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-          <Card className="w-full max-w-md mx-4">
-            <CardContent className="pt-6 text-center">
-              <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Sign In Required</h2>
-              <p className="text-muted-foreground mb-4">Please sign in to access practice problems</p>
-              <Button asChild>
-                <Link to="../dashboard">Go to Dashboard</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  const handleBack = () => {
+    navigate('/practice');
+  };
 
-  // Loading state
-  if (problemLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-card">
-        <Navbar />
-        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-          <Card className="w-full max-w-md">
-            <CardContent className="pt-6 text-center">
-              <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-primary" />
-              <h2 className="text-xl font-semibold mb-2">Loading Problem...</h2>
-              <p className="text-muted-foreground">Please wait while we fetch the problem details.</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  const getTimeColor = () => {
+    if (!problem) return 'text-gray-600';
+    const percentage = (timeRemaining / (problem.timeToSolve * 60)) * 100;
+    if (percentage > 50) return 'text-green-600';
+    if (percentage > 20) return 'text-yellow-600';
+    return 'text-red-600';
+  };
 
-  // Problem not found
-  if (!currentQuestion) {
+  if (loading || !problem) {
     return (
-      <div className="min-h-screen bg-gradient-card">
-        <Navbar />
-        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-          <Card className="w-full max-w-md">
-            <CardContent className="pt-6 text-center">
-              <FileQuestion className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <h2 className="text-xl font-semibold mb-2">Problem Not Found</h2>
-              <p className="text-muted-foreground mb-4">
-                The problem you're looking for doesn't exist or has been removed.
-              </p>
-              <Button asChild>
-                <Link to="/practice">Back to Practice</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  // Check premium access
-  if (currentQuestion.is_premium && (user as any)?.subscription_tier !== 'premium') {
-    return (
-      <div className="min-h-screen bg-gradient-card">
-        <Navbar />
-        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-          <Card className="w-full max-w-md mx-4">
-            <CardContent className="pt-6 text-center">
-              <Lock className="w-12 h-12 text-warning mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Premium Problem</h2>
-              <p className="text-muted-foreground mb-4">This problem requires a premium subscription</p>
-              <Button asChild variant="hero">
-                <Link to="/practice">Back to Practice</Link>
-              </Button>
-            </CardContent>
-          </Card>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading problem...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <TooltipProvider>
-      <div className="min-h-screen bg-gradient-card">
-        <Navbar />
-        
-        <div className="container mx-auto px-4 py-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/practice">
-                  <ChevronLeft className="w-4 h-4 mr-1"/>Back to Practice
-                </Link>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white border-b sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" onClick={handleBack}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Practice
               </Button>
-              <div className="h-6 w-px bg-border" />
-              <Badge variant="outline">{currentQuestion.subject}</Badge>
-              <Badge variant="outline">{currentQuestion.industry}</Badge>
-              <Badge variant={currentQuestion.difficulty === "easy" ? "easy" : currentQuestion.difficulty === "medium" ? "medium" : "hard"}>
-                {currentQuestion.difficulty.charAt(0).toUpperCase() + currentQuestion.difficulty.slice(1)}
-              </Badge>
-              {currentQuestion.is_premium && <Badge variant="warning">Premium</Badge>}
+              <div className="h-6 w-px bg-gray-300" />
+              <h2>{problem.title}</h2>
             </div>
-            
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                <span className="font-mono text-lg font-semibold">{display}</span>
-              </div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button size="icon" variant="ghost" onClick={() => setRunning(!running)}>
-                    {running ? <StopCircle className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{running ? "Pause" : "Resume"} timer</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button size="icon" variant="ghost" onClick={resetTimer}>
-                    <TimerReset className="w-5 h-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Reset timer</TooltipContent>
-              </Tooltip>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-            {/* Main Content */}
-            <div className="xl:col-span-8 space-y-6">
-              {/* Question Card */}
-              <Card className="shadow-medium">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-xl mb-2">{currentQuestion.title}</CardTitle>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <AlarmClock className="w-4 h-4" />
-                        <span>Suggested time: {currentQuestion.time_limit_minutes} minutes</span>
-                        <span>•</span>
-                        <span>Asked at: {currentQuestion.companies.join(", ")}</span>
-                      </div>
-                    </div>
-                    <Button
-                      variant={flagged ? "secondary" : "outline"}
-                      size="sm"
-                      onClick={() => setFlagged(!flagged)}
-                    >
-                      <Flag className="w-4 h-4 mr-1" />
-                      {flagged ? "Flagged" : "Flag"}
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="prose max-w-none mb-6">
-                    <p className="text-base leading-relaxed">{currentQuestion.prompt}</p>
-                  </div>
-                  
-                  {/* Whiteboard and Tools */}
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <Whiteboard
-                      onToggleFullscreen={() => setWhiteboardFullscreen(true)}
-                      savedImageData={whiteboardImageData}
-                      onSaveImageData={setWhiteboardImageData}
-                    />
-                    <div className="space-y-4">
-                      <HintSystem hints={currentQuestion.hints || []} />
-                      <QuickCalculator />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              
-
-              {/* Notes Section */}
-              {/* Notes Section */}
-              <Card className="shadow-medium">
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <NotebookPen className="w-4 h-4" />
-                    Your Solution Notes
-                    <Badge 
-                      variant={saveStatus === 'saved' ? 'success' : saveStatus === 'saving' ? 'outline' : 'destructive'} 
-                      className="text-xs"
-                    >
-                      {saveStatus === 'saved' ? 'Saved' : saveStatus === 'saving' ? 'Saving...' : 'Unsaved'}
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Textarea
-                    className="min-h-[150px] resize-none"
-                    placeholder={notesLoaded ? "Walk through your solution step by step. State assumptions, show calculations, and explain your reasoning..." : "Loading notes..."}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    disabled={!notesLoaded}
-                  />
-                  <div className="flex items-center gap-2 mt-3">
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => navigator.clipboard?.writeText(notes)}
-                      disabled={!notes.trim()}
-                    >
-                      <ClipboardCopy className="w-4 h-4 mr-1" />
-                      Copy Notes
-                    </Button>
-                    <span className="text-xs text-muted-foreground">
-                      {saveStatus === 'saved' && 'Notes saved automatically'}
-                      {saveStatus === 'saving' && 'Saving notes...'}
-                      {saveStatus === 'unsaved' && 'Changes will be saved automatically'}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Button 
-                    onClick={() => handleSubmitSolution('skipped')}
-                    variant="outline"
-                    disabled={loading}
-                  >
-                    Skip Problem
-                  </Button>
-                  <Button 
-                    onClick={() => handleSubmitSolution('partially_solved')}
-                    variant="secondary"
-                    disabled={loading}
-                  >
-                    Save Progress
-                  </Button>
-                  <Button 
-                    onClick={() => handleSubmitSolution('solved')}
-                    disabled={loading}
-                  >
-                    {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Mark as Solved
-                  </Button>
-                </div>
-
-                <Button 
-                  variant="outline"
-                  onClick={() => navigate('/practice')}
-                >
-                  <Square className="w-4 h-4 mr-2" />
-                  End Session
+                <Button variant="outline" size="sm" onClick={() => setIsPaused(!isPaused)}>
+                  {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
                 </Button>
+                <span className={`text-xl ${getTimeColor()}`}>{formatTime(timeRemaining)}</span>
               </div>
-            </div>
-
-            {/* Sidebar */}
-            <div className="xl:col-span-4 space-y-6">
-              {/* Interview Context */}
-              <Card className="shadow-medium">
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Info className="w-4 h-4" />
-                    Interview Context
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Position</span>
-                      <span>Mechanical Engineer</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Round</span>
-                      <span>Technical Interview</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Focus</span>
-                      <span>{currentQuestion.subject}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="p-3 rounded-lg bg-muted/50">
-                    <h4 className="text-sm font-medium mb-2">What they're evaluating:</h4>
-                    <ul className="text-xs space-y-1 text-muted-foreground">
-                      <li>• Problem-solving approach</li>
-                      <li>• Technical knowledge application</li>
-                      <li>• Communication clarity</li>
-                      <li>• Practical considerations</li>
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Quick Reference (Now Collapsible) */}
-              <QuickReference />
-
-              {/* Solution Dialog */}
-              <Dialog open={solutionDialogOpen} onOpenChange={setSolutionDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="w-full">
-                    <HelpCircle className="w-4 h-4 mr-2" />
-                    View Solution Approach
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>Solution Approach</DialogTitle>
-                    <DialogDescription>
-                      One possible way to tackle this problem systematically
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-3">
-                    {(currentQuestion.hints || []).map((hint, index) => (
-                      <div key={index} className="flex gap-3">
-                        <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium flex-shrink-0">
-                          {index + 1}
-                        </span>
-                        <p className="text-sm">{hint}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <DialogFooter>
-                    <Button onClick={() => setSolutionDialogOpen(false)}>
-                      <Check className="w-4 h-4 mr-2" />
-                      Got it
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <Button variant="outline" onClick={handleSave}>
+                <Save className="w-4 h-4 mr-2" />
+                Save Progress
+              </Button>
             </div>
           </div>
         </div>
-
-        {/* Fullscreen Whiteboard Dialog */}
-        <Dialog open={whiteboardFullscreen} onOpenChange={setWhiteboardFullscreen}>
-          <DialogContent className="max-w-[100vw] h-[100vh] w-full p-0 gap-0">
-            <div className="flex flex-col h-full">
-              <DialogHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b flex-shrink-0">
-                <div className="flex items-center justify-between">
-                  <DialogTitle className="text-base sm:text-lg">Whiteboard - Full Screen</DialogTitle>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setWhiteboardFullscreen(false)}
-                  >
-                    <Minimize2 className="w-4 h-4 mr-1 sm:mr-2" />
-                    <span className="hidden sm:inline">Exit Fullscreen</span>
-                    <span className="sm:hidden">Exit</span>
-                  </Button>
-                </div>
-              </DialogHeader>
-              <div className="flex-1 p-4 sm:p-6 overflow-hidden">
-                <Whiteboard
-                  isFullscreen={true}
-                  onToggleFullscreen={() => setWhiteboardFullscreen(false)}
-                  savedImageData={whiteboardImageData}
-                  onSaveImageData={setWhiteboardImageData}
-                />
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
-    </TooltipProvider>
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Badge>{problem.difficulty}</Badge>
+                <Badge variant="outline">{problem.topic}</Badge>
+                <Badge variant="outline">{problem.field}</Badge>
+              </div>
+              <ScrollArea className="h-96">
+                <div className="pr-4 whitespace-pre-wrap">{problem.detailedProblem}</div>
+              </ScrollArea>
+            </Card>
+            <Card className="p-6">
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="whiteboard">Whiteboard</TabsTrigger>
+                  <TabsTrigger value="notes">Notes</TabsTrigger>
+                  <TabsTrigger value="calculator">
+                    <CalculatorIcon className="w-4 h-4 mr-2" />
+                    Calculator
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="whiteboard" className="mt-4">
+                  <Whiteboard height={400} />
+                </TabsContent>
+                <TabsContent value="notes" className="mt-4">
+                  <Textarea placeholder="Write your notes, calculations, and working here..." value={notes} onChange={(e) => setNotes(e.target.value)} className="min-h-[400px] font-mono" />
+                </TabsContent>
+                <TabsContent value="calculator" className="mt-4">
+                  <div className="flex justify-center">
+                    <Calculator />
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </Card>
+            <Card className="p-6">
+              <h3 className="mb-4">Your Answer</h3>
+              <Textarea placeholder="Enter your final answer with all calculations and reasoning..." value={answer} onChange={(e) => setAnswer(e.target.value)} className="min-h-[200px] mb-4" />
+              <div className="flex gap-4">
+                <Button onClick={handleSubmit} className="flex-1" disabled={isSubmitting}>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  {isSubmitting ? 'Submitting...' : 'Submit Solution'}
+                </Button>
+                <Button variant="outline" onClick={handleSkip} disabled={isSubmitting}>
+                  <SkipForward className="w-4 h-4 mr-2" />
+                  Skip Problem
+                </Button>
+              </div>
+            </Card>
+          </div>
+          <div className="space-y-6">
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Lightbulb className="w-5 h-5 text-yellow-500" />
+                <h3>Hints</h3>
+              </div>
+              <div className="space-y-3">
+                {problem.hints.map((hint, index) => (
+                  <div key={index}>
+                    {index < hintsRevealed ? (
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          <span className="font-semibold">Hint {index + 1}:</span> {hint}
+                        </AlertDescription>
+                      </Alert>
+                    ) : index === hintsRevealed ? (
+                      <Button variant="outline" className="w-full" onClick={revealNextHint}>
+                        Reveal Hint {index + 1}
+                      </Button>
+                    ) : null}
+                  </div>
+                ))}
+                {hintsRevealed === problem.hints.length && (
+                  <p className="text-sm text-gray-500 text-center">All hints revealed</p>
+                )}
+              </div>
+            </Card>
+            {problem.interviewContext && (
+              <Card className="p-6">
+                <h3 className="mb-4">Interview Context</h3>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <span className="text-gray-500">Position:</span>
+                    <p>{problem.interviewContext.position}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Interview Round:</span>
+                    <p>{problem.interviewContext.round}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Focus Area:</span>
+                    <p>{problem.interviewContext.focusArea}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">What They're Evaluating:</span>
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      {problem.interviewContext.evaluationCriteria.map((criteria, index) => (
+                        <li key={index}>{criteria}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </Card>
+            )}
+            {problem.quickReferences && problem.quickReferences.length > 0 && (
+              <Card className="p-6">
+                <h3 className="mb-4">Quick References</h3>
+                <ul className="space-y-2">
+                  {problem.quickReferences.map((ref, index) => (
+                    <li key={index}>
+                      <a href="#" className="text-blue-600 hover:underline text-sm">{ref}</a>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
+            <Card className="p-6">
+              <h3 className="mb-4">Asked At</h3>
+              <div className="flex flex-wrap gap-2">
+                {problem.companies.map((company) => (
+                  <Badge key={company} variant="secondary">{company}</Badge>
+                ))}
+              </div>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
   );
-};
-
-export default PracticeInterface;
+}

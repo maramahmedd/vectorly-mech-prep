@@ -262,23 +262,21 @@ export const useSubjectProgress = (reloadTrigger?: number) => {
 
       console.log('Subject submissions:', submissions);
 
-      // Mock mapping of problem IDs to subjects (since we don't have a problems table yet)
-      const problemSubjectMap: Record<string, string> = {
-        've-thermo-001': 'Thermodynamics',
-        've-solid-002': 'Solid Mechanics',
-        've-fluids-003': 'Fluid Dynamics',
-        've-materials-004': 'Materials Science',
-        've-dynamics-005': 'Dynamics',
-        've-heat-006': 'Heat Transfer',
-        've-statics-007': 'Statics',
-        've-advanced-008': 'Advanced CFD'
-      };
+      // Import mock problems to get the topic/field mapping
+      // In a real app, this would come from a problems table in the database
+      const { mockProblems } = await import('@/data/mockProblems');
 
-      // Group submissions by subject
+      const problemMap: Record<string, { topic: string; field: string }> = {};
+      mockProblems.forEach(p => {
+        problemMap[p.id] = { topic: p.topic, field: p.field };
+      });
+
+      // Group submissions by topic (subject)
       const subjectStats: Record<string, { attempted: number; solved: number; time: number }> = {};
-      
+
       submissions?.forEach(submission => {
-        const subject = problemSubjectMap[submission.problem_id] || 'Other';
+        const problemInfo = problemMap[submission.problem_id];
+        const subject = problemInfo?.topic || 'Other';
         if (!subjectStats[subject]) {
           subjectStats[subject] = { attempted: 0, solved: 0, time: 0 };
         }
