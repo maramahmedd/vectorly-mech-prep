@@ -27,7 +27,7 @@ const Index = () => {
     {
       icon: BookOpen,
       title: "Comprehensive Problem Bank",
-      description: "Crowdsourced questions from real mechanical engineering interviews across all industries."
+      description: "Crowdsourced questions from real engineering interviews across all industries."
     },
     {
       icon: Target,
@@ -71,7 +71,7 @@ const Index = () => {
         <div className="container mx-auto px-4 py-12 sm:py-16 lg:py-32">
           <div className="text-center animate-fade-in">
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 leading-tight">
-              Master Mechanical Engineering <br className="hidden sm:block" />
+              Master Engineering <br className="hidden sm:block" />
               <span>Interview Success</span>
             </h1>
             <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 sm:mb-8 text-white/90 max-w-3xl mx-auto px-4">
@@ -198,7 +198,7 @@ const Index = () => {
           <div className="text-center mb-8 sm:mb-12 lg:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">Why Vectorly Works</h2>
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
-              Unlike generic coding platforms, we understand the unique challenges of mechanical engineering interviews.
+              Unlike generic coding platforms, we understand the unique challenges of engineering interviews.
             </p>
           </div>
 
@@ -232,7 +232,7 @@ const Index = () => {
                 {
                   name: "Marcus Rodriguez",
                   role: "Recent Graduate",
-                  text: "Finally, interview prep that actually understands mechanical engineering. Got offers from 3 companies!",
+                  text: "Finally, interview prep that actually understands engineering. Got offers from 3 companies!",
                   company: "Ford"
                 },
                 {
@@ -347,7 +347,7 @@ const Index = () => {
             Ready to Ace Your Next Interview?
           </h2>
           <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 text-white/90 max-w-2xl mx-auto">
-            Join hundreds of mechanical engineering students who've landed their dream roles with Vectorly.
+            Join hundreds of engineering students who've landed their dream roles with Vectorly.
           </p>
           <Button variant="hero" size="lg" className="text-base sm:text-lg w-full sm:w-auto" asChild>
             <Link to="practice">Start Your Free Trial <ArrowRight className="ml-2" /></Link>

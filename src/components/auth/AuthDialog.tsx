@@ -35,7 +35,7 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ children, defaultMode = 
     email: '',
     password: '',
     university: '',
-    major: 'Mechanical Engineering',
+    major: 'Engineering',
     graduationYear: ''
   });
   
@@ -68,7 +68,7 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ children, defaultMode = 
         email: '',
         password: '',
         university: '',
-        major: 'Mechanical Engineering',
+        major: 'Engineering',
         graduationYear: ''
       });
     } catch (error: any) {
@@ -115,7 +115,7 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ children, defaultMode = 
           <DialogDescription>
             {mode === 'login' 
               ? 'Sign in to continue your interview prep journey' 
-              : 'Start your mechanical engineering interview preparation'
+              : 'Start your engineering interview preparation'
             }
           </DialogDescription>
         </DialogHeader>

@@ -13,10 +13,10 @@ const About = () => {
       <section className="py-20 text-center text-black bg-gradient-hero">
         <div className="container mx-auto px-4">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Empowering Mechanical Engineers to Succeed
+            Empowering Engineers to Succeed
           </h1>
           <p className="text-lg md:text-xl text-black/90 max-w-3xl mx-auto">
-            Vectorly helps mechanical engineering students and graduates prepare for real-world interviews 
+            Vectorly helps engineering students and graduates prepare for real-world interviews
             through interactive problem-solving, theory-linked learning, and personalized analytics.
           </p>
         </div>
@@ -37,12 +37,12 @@ const About = () => {
               {
                 icon: BookOpen,
                 title: "Built by Students",
-                text: "Created by mechanical engineers who understand the struggle of preparing for highly technical interviews."
+                text: "Created by engineers who understand the struggle of preparing for highly technical interviews."
               },
               {
                 icon: Target,
                 title: "Focused on ME Careers",
-                text: "Unlike generic coding sites, every problem is tailored to core mechanical concepts and real industries."
+                text: "Unlike generic coding sites, every problem is tailored to core engineering concepts and real industries."
               },
               {
                 icon: TrendingUp,
@@ -71,8 +71,8 @@ const About = () => {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-4">Our Mission</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto mb-10">
-            To make technical interview preparation accessible, structured, and effective 
-            for mechanical engineer — regardless of background or experience.
+            To make technical interview preparation accessible, structured, and effective
+            for engineers — regardless of background or experience.
           </p>
           <Button variant="hero" size="lg" asChild>
             <a href="/practice">Explore Practice Problems</a>

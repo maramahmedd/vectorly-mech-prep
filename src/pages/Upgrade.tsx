@@ -41,7 +41,7 @@ const Upgrade = () => {
           
           <h1 className="text-4xl font-bold mb-4">Unlock Your Full Potential</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Get unlimited access to premium problems and advanced features to ace your mechanical engineering interviews
+            Get unlimited access to premium problems and advanced features to ace your engineering interviews
           </p>
         </div>
 
@@ -170,7 +170,7 @@ const Upgrade = () => {
             <CardContent className="pt-8">
               <h2 className="text-2xl font-bold mb-4">Ready to Land Your Dream Job?</h2>
               <p className="mb-6 text-white/90">
-                Join thousands of mechanical engineers who've successfully prepared with Vectorly
+                Join thousands of engineers who've successfully prepared with Vectorly
               </p>
               <Button variant="secondary" size="lg" className="mb-4">
                 Start Your Free Trial Today

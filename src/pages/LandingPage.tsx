@@ -169,7 +169,7 @@ function ResponsiveDm1() {
             {/* Left Side - Hero Text */}
             <div className="flex flex-col gap-8 lg:gap-12">
               <h1 className="font-semibold leading-tight text-4xl sm:text-5xl lg:text-6xl xl:text-7xl tracking-tight">
-                Master Mechanical Engineering Interview Success
+                Master Engineering Interview Success
               </h1>
 
               <p className="font-medium leading-relaxed text-gray-600 text-base lg:text-lg max-w-xl">
@@ -498,7 +498,7 @@ function ResponsiveDm1() {
               Why Vectorly works
             </h2>
             <p className="text-lg text-gray-600 leading-relaxed">
-              Unlike generic coding platforms, we understand the unique challenges of mechanical engineering interviews.
+              Unlike generic coding platforms, we understand the unique challenges of engineering interviews.
             </p>
           </div>
 
@@ -514,7 +514,7 @@ function ResponsiveDm1() {
                 Comprehensive Problem Bank
               </h3>
               <p className="text-xs text-gray-700 text-center leading-relaxed">
-                Crowdsourced questions from real mechanical engineering interviews across all industries.
+                Crowdsourced questions from real engineering interviews across all industries.
               </p>
             </div>
 
@@ -609,7 +609,7 @@ function ResponsiveDm1() {
                   ))}
                 </div>
                 <p className="text-xl font-normal tracking-tight leading-snug">
-                  "Finally, interview prep that actually understands mechanical engineering. Got offers from 3 companies!"
+                  "Finally, interview prep that actually understands engineering. Got offers from 3 companies!"
                 </p>
               </div>
               <p className="text-xs leading-relaxed text-center">
@@ -664,7 +664,7 @@ function ResponsiveDm1() {
             </h2>
 
             <p className="text-xl sm:text-2xl lg:text-4xl font-light text-white max-w-3xl mx-auto">
-              Join thousands of mechanical engineers who are mastering their skills and landing their dream jobs.
+              Join thousands of engineers who are mastering their skills and landing their dream jobs.
             </p>
 
             {userState === 'not_logged_in' ? (

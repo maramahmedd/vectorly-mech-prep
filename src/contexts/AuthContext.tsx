@@ -137,7 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
       email: authUser.email || '',
       university: authUser.user_metadata?.university || '',
-      major: authUser.user_metadata?.major || 'Mechanical Engineering',
+      major: authUser.user_metadata?.major || 'Engineering',
       graduation_year: authUser.user_metadata?.graduation_year || '',
       subscription_tier: 'free' as const,
       total_problems_solved: 0,
@@ -163,7 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         data: {
           name,
           university: university || '',
-          major: major || 'Mechanical Engineering',
+          major: major || 'Engineering',
           graduation_year: graduationYear || '',
         }
       }
@@ -185,7 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email: email,
             name: name,
             university: university || '',
-            major: major || 'Mechanical Engineering',
+            major: major || 'Engineering',
             graduation_year: graduationYear || '',
           });
 
