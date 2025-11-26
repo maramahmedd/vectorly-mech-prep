@@ -1,22 +1,16 @@
-# Welcome to your Lovable project
+# Vectorly - Engineering Interview Prep
+
+Master engineering interviews with real questions, theory-linked learning, and industry-specific practice.
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/85cca68a-04ee-490b-bb09-85391693e7d2
+This is a React-based web application for engineering interview preparation.
 
 ## How can I edit this code?
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/85cca68a-04ee-490b-bb09-85391693e7d2) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
 **Use your preferred IDE**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Clone this repo and push changes using Git.
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
@@ -62,12 +56,11 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/85cca68a-04ee-490b-bb09-85391693e7d2) and click on Share -> Publish.
+You can deploy this project using various hosting platforms:
 
-## Can I connect a custom domain to my Lovable project?
+- Netlify
+- Vercel
+- GitHub Pages
+- Any static hosting service
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Simply build the project with `npm run build` and deploy the `dist` folder.
