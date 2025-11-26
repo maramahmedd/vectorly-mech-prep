@@ -33,6 +33,10 @@ archive/
 # Documentation
 docs/
 
+# Implementation summaries (generated documentation)
+CRITICAL_FIXES_SUMMARY.md
+IMPROVEMENTS_SUMMARY.md
+
 # Code Responsive Website folder (design reference)
 Code Responsive Website/
 

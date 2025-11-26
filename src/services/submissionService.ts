@@ -31,6 +31,7 @@ export interface SubmissionData {
   hints_used?: number;
   accuracy_score?: number;
   notes?: string;
+  whiteboard_data?: string;
 }
 
 export interface UserSubmission {
@@ -45,6 +46,7 @@ export interface UserSubmission {
   updated_at: string;
   accuracy_score?: number;
   notes?: string;
+  whiteboard_data?: string;
 }
 
 export const submissionService = {
@@ -73,6 +75,7 @@ export const submissionService = {
           hints_used: data.hints_used || 0,
           accuracy_score: data.accuracy_score,
           notes: data.notes,
+          whiteboard_data: data.whiteboard_data,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id,problem_id',
@@ -105,6 +108,7 @@ export const submissionService = {
               hints_used: Math.max(existingSubmission.hints_used, data.hints_used || 0),
               accuracy_score: data.accuracy_score,
               notes: data.notes,
+              whiteboard_data: data.whiteboard_data,
               updated_at: new Date().toISOString()
             })
             .eq('id', existingSubmission.id)
@@ -127,7 +131,8 @@ export const submissionService = {
               time_spent_minutes: Math.max(0, data.time_spent_minutes),
               hints_used: data.hints_used || 0,
               accuracy_score: data.accuracy_score,
-              notes: data.notes
+              notes: data.notes,
+              whiteboard_data: data.whiteboard_data
             })
             .select()
             .single();

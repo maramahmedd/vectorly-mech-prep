@@ -2,7 +2,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import Navbar from "@/components/ui/navbar";
 import { CheckCircle, Star, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -10,14 +9,14 @@ const Upgrade = () => {
   const features = {
     free: [
       "4 free practice problems",
-      "Basic progress tracking", 
+      "Basic progress tracking",
       "Community access"
     ],
     premium: [
       "Unlimited practice problems",
       "Advanced analytics & insights",
       "Industry-specific problem filters",
-      "Theory deep-dives & explanations", 
+      "Theory deep-dives & explanations",
       "1-on-1 mentorship sessions",
       "Mock interview simulations",
       "Company-specific interview prep",
@@ -27,7 +26,6 @@ const Upgrade = () => {
 
   return (
     <div className="min-h-screen bg-gradient-card">
-      <Navbar />
       
       <div className="container mx-auto px-4 py-12">
         {/* Header */}

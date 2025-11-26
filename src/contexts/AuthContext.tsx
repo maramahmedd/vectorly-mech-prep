@@ -1,6 +1,6 @@
-// src/contexts/AuthContext.tsx - Debug version with aggressive timeouts
+// src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User as SupabaseUser } from '@supabase/supabase-js';
+import { User as SupabaseUser, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 
 interface User {
@@ -56,65 +56,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let mounted = true;
 
     const initAuth = async () => {
-      console.log('🚀 Starting auth initialization...');
-      console.log('🔍 Supabase client exists:', !!supabase);
-      console.log('🔍 Supabase auth exists:', !!supabase?.auth);
-
       try {
-        console.log('📞 Calling supabase.auth.getSession()...');
-
-        // Add timeout to getSession
+        // Add timeout to getSession to prevent hanging
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('getSession timeout')), 3000)
+          setTimeout(() => reject(new Error('Session timeout after 5 seconds')), 5000)
         );
 
         const result = await Promise.race([sessionPromise, timeoutPromise]);
-        const { data: { session }, error } = result as any;
-        console.log('📞 getSession() completed');
-        
-        console.log('📡 Session result:', { session: !!session, error });
+        const { data: { session }, error } = result as { data: { session: Session | null }, error: AuthError | null };
 
         if (!mounted) return;
 
         if (error) {
-          console.error('❌ Session error:', error);
+          console.error('Auth session error:', error);
           setLoading(false);
           return;
         }
 
         if (session?.user) {
-          console.log('👤 User found, loading data...');
           await loadUserData(session.user);
         } else {
-          console.log('🔒 No session, setting loading false');
           setLoading(false);
         }
       } catch (error) {
-        console.error('💥 Auth init error:', error);
+        console.error('Auth initialization failed:', error);
         if (mounted) setLoading(false);
       }
     };
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔄 Auth state change:', event, !!session);
-        
+      async (_event, session) => {
         if (!mounted) return;
 
         try {
           if (session?.user) {
-            console.log('👤 Auth change: loading user data...');
             await loadUserData(session.user);
           } else {
-            console.log('🔒 Auth change: no user, clearing state');
             setUser(null);
             setIsAdmin(false);
             setLoading(false);
           }
         } catch (error) {
-          console.error('💥 Auth state change error:', error);
+          console.error('Auth state change failed:', error);
           setLoading(false);
         }
       }
@@ -129,9 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loadUserData = async (authUser: SupabaseUser) => {
-    console.log('📝 Loading user data for:', authUser.id);
-
-    // Create user from auth metadata immediately (skip database query due to connection issues)
+    // Create user from auth metadata immediately
     const user = {
       id: authUser.id,
       name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
@@ -146,15 +129,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       total_study_time_minutes: 0,
     };
 
-    console.log('✅ User created from auth metadata:', user);
     setUser(user);
     setLoading(false);
   };
 
   const signup = async (userData: SignupData) => {
     const { email, password, name, university, major, graduationYear } = userData;
-
-    console.log('📝 Starting signup...');
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -170,13 +150,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (error) {
-      console.error('❌ Signup error:', error);
       throw error;
     }
 
     // Create user record in database (backup in case trigger doesn't work)
     if (data.user) {
-      console.log('📝 Creating user record in database...');
       try {
         const { error: insertError } = await supabase
           .from('users')
@@ -190,68 +168,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
 
         if (insertError && insertError.code !== '23505') { // 23505 = unique violation (already exists)
-          console.error('⚠️ Failed to create user record:', insertError);
-        } else {
-          console.log('✅ User record created');
+          console.error('Failed to create user record:', insertError);
         }
       } catch (err) {
-        console.error('⚠️ Error creating user record:', err);
+        console.error('Error creating user record:', err);
       }
     }
-
-    console.log('✅ Signup successful');
   };
 
   const login = async (email: string, password: string) => {
-    console.log('🔐 Starting login...');
-    
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    
+
     if (error) {
-      console.error('❌ Login error:', error);
       throw error;
     }
-    
-    console.log('✅ Login successful');
   };
 
   const logout = async () => {
-    console.log('🚪 Logging out...');
-    
     const { error } = await supabase.auth.signOut();
     if (error) {
-      console.error('❌ Logout error:', error);
       throw error;
     }
-    
+
     setUser(null);
     setIsAdmin(false);
-    console.log('✅ Logged out');
   };
 
   const updateUserProfile = async (userData: Partial<User>) => {
     if (!user) throw new Error('No user logged in');
-    
-    console.log('📝 Updating profile...');
-    
+
     const { error } = await supabase
       .from('users')
       .update(userData)
       .eq('id', user.id);
-    
+
     if (error) {
-      console.error('❌ Profile update error:', error);
       throw error;
     }
-    
-    setUser(prev => prev ? { ...prev, ...userData } : null);
-    console.log('✅ Profile updated');
-  };
 
-  console.log('🎯 AuthProvider render - loading:', loading, 'user:', !!user);
+    setUser(prev => prev ? { ...prev, ...userData } : null);
+  };
 
   const value = {
     user,

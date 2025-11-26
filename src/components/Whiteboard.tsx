@@ -1,12 +1,20 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Eraser, Trash2, Pencil } from 'lucide-react';
 
 interface WhiteboardProps {
   height?: number;
+  initialData?: string;
+  onChange?: (dataUrl: string) => void;
 }
 
-export function Whiteboard({ height = 400 }: WhiteboardProps) {
+export interface WhiteboardRef {
+  getCanvasData: () => string;
+  loadCanvasData: (dataUrl: string) => void;
+  clear: () => void;
+}
+
+export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(({ height = 400, initialData, onChange }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [color, setColor] = useState('#000000');
@@ -27,7 +35,47 @@ export function Whiteboard({ height = 400 }: WhiteboardProps) {
     // Set default styles
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+
+    // Load initial data if provided
+    if (initialData) {
+      loadCanvasData(initialData);
+    }
   }, [height]);
+
+  const getCanvasData = (): string => {
+    const canvas = canvasRef.current;
+    if (!canvas) return '';
+    return canvas.toDataURL();
+  };
+
+  const loadCanvasData = (dataUrl: string) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const img = new Image();
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+    };
+    img.src = dataUrl;
+  };
+
+  // Expose methods to parent via ref
+  useImperativeHandle(ref, () => ({
+    getCanvasData,
+    loadCanvasData,
+    clear: clearCanvas,
+  }));
+
+  // Notify parent of changes
+  const notifyChange = () => {
+    if (onChange) {
+      onChange(getCanvasData());
+    }
+  };
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -66,6 +114,7 @@ export function Whiteboard({ height = 400 }: WhiteboardProps) {
 
   const stopDrawing = () => {
     setIsDrawing(false);
+    notifyChange();
   };
 
   const clearCanvas = () => {
@@ -76,6 +125,7 @@ export function Whiteboard({ height = 400 }: WhiteboardProps) {
     if (!ctx) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    notifyChange();
   };
 
   const toggleEraser = () => {
@@ -135,4 +185,4 @@ export function Whiteboard({ height = 400 }: WhiteboardProps) {
       />
     </div>
   );
-}
+});

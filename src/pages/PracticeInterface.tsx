@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Problem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Whiteboard } from '@/components/Whiteboard';
+import { Whiteboard, WhiteboardRef } from '@/components/Whiteboard';
 import { Calculator } from '@/components/Calculator';
 import {
   ArrowLeft,
@@ -28,13 +28,16 @@ import { getProblemById } from '@/services/problemService';
 
 export default function PracticeInterface() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const whiteboardRef = useRef<WhiteboardRef>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [initialTime, setInitialTime] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [answer, setAnswer] = useState('');
   const [notes, setNotes] = useState('');
+  const [whiteboardData, setWhiteboardData] = useState('');
   const [hintsRevealed, setHintsRevealed] = useState<number>(0);
   const [activeTab, setActiveTab] = useState('whiteboard');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,8 +45,10 @@ export default function PracticeInterface() {
 
   useEffect(() => {
     const loadProblem = async () => {
-      const problemId = sessionStorage.getItem('selectedProblemId');
+      // Get problem ID from URL parameter
+      const problemId = searchParams.get('problem');
       if (!problemId) {
+        toast.error('No problem selected');
         navigate('/practice');
         return;
       }
@@ -80,9 +85,34 @@ export default function PracticeInterface() {
         setTimeRemaining(initialSeconds);
         setInitialTime(initialSeconds);
 
-        // Mark as attempted when user starts
+        // Load existing submission data if available
         if (user) {
-          submissionService.markAsAttempted(problemId).catch(console.error);
+          try {
+            const existingSubmission = await submissionService.getUserSubmissionForProblem(user.id, problemId);
+            if (existingSubmission) {
+              console.log('Loading existing submission:', existingSubmission);
+              // Load saved answer and notes
+              if (existingSubmission.user_answer) {
+                setAnswer(existingSubmission.user_answer);
+              }
+              if (existingSubmission.notes) {
+                setNotes(existingSubmission.notes);
+              }
+              // Load whiteboard data
+              if (existingSubmission.whiteboard_data) {
+                setWhiteboardData(existingSubmission.whiteboard_data);
+              }
+            } else {
+              // Mark as attempted when user starts for the first time
+              submissionService.markAsAttempted(problemId).catch((error) => {
+                console.error('Failed to mark problem as attempted:', error);
+                // Non-critical error, don't show to user
+              });
+            }
+          } catch (error) {
+            console.error('Failed to load existing submission:', error);
+            // Non-critical error, continue anyway
+          }
         }
       } catch (error) {
         console.error('Error loading problem:', error);
@@ -94,7 +124,7 @@ export default function PracticeInterface() {
     };
 
     loadProblem();
-  }, [navigate, user]);
+  }, [navigate, user, searchParams]);
 
   useEffect(() => {
     if (isPaused || timeRemaining <= 0 || !problem) return;
@@ -103,6 +133,33 @@ export default function PracticeInterface() {
     }, 1000);
     return () => clearInterval(timer);
   }, [isPaused, timeRemaining, problem]);
+
+  // Auto-save functionality - save progress every 30 seconds
+  useEffect(() => {
+    if (!problem || !user) return;
+
+    const autoSaveInterval = setInterval(async () => {
+      try {
+        const timeSpentMinutes = Math.round((initialTime - timeRemaining) / 60);
+        const whiteboardDataToSave = whiteboardRef.current?.getCanvasData() || whiteboardData;
+
+        await submissionService.submitAnswer({
+          problem_id: problem.id,
+          status: 'attempted',
+          user_answer: answer,
+          notes,
+          whiteboard_data: whiteboardDataToSave,
+          time_spent_minutes: timeSpentMinutes,
+          hints_used: hintsRevealed,
+        });
+        console.log('Auto-saved progress');
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+      }
+    }, 30000); // Auto-save every 30 seconds
+
+    return () => clearInterval(autoSaveInterval);
+  }, [problem, user, answer, notes, whiteboardData, timeRemaining, initialTime, hintsRevealed]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -124,11 +181,14 @@ export default function PracticeInterface() {
 
     try {
       const timeSpentMinutes = Math.round((initialTime - timeRemaining) / 60);
+      const whiteboardDataToSave = whiteboardRef.current?.getCanvasData() || whiteboardData;
+
       await submissionService.submitAnswer({
         problem_id: problem.id,
         status: 'attempted',
         user_answer: answer,
         notes,
+        whiteboard_data: whiteboardDataToSave,
         time_spent_minutes: timeSpentMinutes,
         hints_used: hintsRevealed,
       });
@@ -145,9 +205,14 @@ export default function PracticeInterface() {
     if (problem && user) {
       try {
         const timeSpentMinutes = Math.round((initialTime - timeRemaining) / 60);
+        const whiteboardDataToSave = whiteboardRef.current?.getCanvasData() || whiteboardData;
+
         await submissionService.submitAnswer({
           problem_id: problem.id,
           status: 'skipped',
+          user_answer: answer,
+          notes,
+          whiteboard_data: whiteboardDataToSave,
           time_spent_minutes: timeSpentMinutes,
           hints_used: hintsRevealed,
         });
@@ -172,11 +237,14 @@ export default function PracticeInterface() {
     setIsSubmitting(true);
     try {
       const timeSpentMinutes = Math.round((initialTime - timeRemaining) / 60);
+      const whiteboardDataToSave = whiteboardRef.current?.getCanvasData() || whiteboardData;
+
       await submissionService.submitAnswer({
         problem_id: problem.id,
         status: 'solved', // In real app, this would be evaluated
         user_answer: answer,
         notes,
+        whiteboard_data: whiteboardDataToSave,
         time_spent_minutes: timeSpentMinutes,
         hints_used: hintsRevealed,
       });
@@ -264,7 +332,12 @@ export default function PracticeInterface() {
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="whiteboard" className="mt-4">
-                  <Whiteboard height={400} />
+                  <Whiteboard
+                    ref={whiteboardRef}
+                    height={400}
+                    initialData={whiteboardData}
+                    onChange={setWhiteboardData}
+                  />
                 </TabsContent>
                 <TabsContent value="notes" className="mt-4">
                   <Textarea placeholder="Write your notes, calculations, and working here..." value={notes} onChange={(e) => setNotes(e.target.value)} className="min-h-[400px] font-mono" />

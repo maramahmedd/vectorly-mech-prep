@@ -89,25 +89,25 @@ export function Calculator() {
   const operationClass = "h-12 text-lg bg-blue-500 hover:bg-blue-600 text-white";
 
   return (
-    <Card className="p-4 w-full max-w-xs">
-      <div className="mb-4 p-3 bg-gray-100 rounded text-right">
-        <div className="text-sm text-gray-500 h-6">
+    <Card className="p-4 w-full max-w-xs" role="region" aria-label="Calculator">
+      <div className="mb-4 p-3 bg-gray-100 rounded text-right" role="status" aria-live="polite">
+        <div className="text-sm text-gray-500 h-6" aria-label="Previous calculation">
           {previousValue && operation ? `${previousValue} ${operation}` : ''}
         </div>
-        <div className="text-2xl break-all">{display}</div>
+        <div className="text-2xl break-all" aria-label="Calculator display">{display}</div>
       </div>
 
-      <div className="grid grid-cols-4 gap-2">
-        <Button variant="outline" className={buttonClass} onClick={handleClear}>
+      <div className="grid grid-cols-4 gap-2" role="grid" aria-label="Calculator buttons">
+        <Button variant="outline" className={buttonClass} onClick={handleClear} aria-label="Clear all">
           AC
         </Button>
-        <Button variant="outline" className={buttonClass} onClick={handleBackspace}>
+        <Button variant="outline" className={buttonClass} onClick={handleBackspace} aria-label="Backspace">
           ←
         </Button>
-        <Button variant="outline" className={buttonClass} onClick={() => handleOperation('÷')}>
+        <Button variant="outline" className={buttonClass} onClick={() => handleOperation('÷')} aria-label="Divide">
           ÷
         </Button>
-        <Button className={operationClass} onClick={() => handleOperation('×')}>
+        <Button className={operationClass} onClick={() => handleOperation('×')} aria-label="Multiply">
           ×
         </Button>
 
@@ -120,20 +120,20 @@ export function Calculator() {
         <Button variant="outline" className={buttonClass} onClick={() => handleNumber('9')}>
           9
         </Button>
-        <Button className={operationClass} onClick={() => handleOperation('-')}>
+        <Button className={operationClass} onClick={() => handleOperation('-')} aria-label="Subtract">
           −
         </Button>
 
-        <Button variant="outline" className={buttonClass} onClick={() => handleNumber('4')}>
+        <Button variant="outline" className={buttonClass} onClick={() => handleNumber('4')} aria-label="4">
           4
         </Button>
-        <Button variant="outline" className={buttonClass} onClick={() => handleNumber('5')}>
+        <Button variant="outline" className={buttonClass} onClick={() => handleNumber('5')} aria-label="5">
           5
         </Button>
-        <Button variant="outline" className={buttonClass} onClick={() => handleNumber('6')}>
+        <Button variant="outline" className={buttonClass} onClick={() => handleNumber('6')} aria-label="6">
           6
         </Button>
-        <Button className={operationClass} onClick={() => handleOperation('+')}>
+        <Button className={operationClass} onClick={() => handleOperation('+')} aria-label="Add">
           +
         </Button>
 
@@ -149,6 +149,7 @@ export function Calculator() {
         <Button
           className="row-span-2 h-full bg-green-500 hover:bg-green-600 text-white text-lg"
           onClick={calculate}
+          aria-label="Calculate result"
         >
           =
         </Button>
@@ -157,10 +158,11 @@ export function Calculator() {
           variant="outline"
           className="col-span-2 h-12 text-lg"
           onClick={() => handleNumber('0')}
+          aria-label="0"
         >
           0
         </Button>
-        <Button variant="outline" className={buttonClass} onClick={handleDecimal}>
+        <Button variant="outline" className={buttonClass} onClick={handleDecimal} aria-label="Decimal point">
           .
         </Button>
       </div>
