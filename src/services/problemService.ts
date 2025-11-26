@@ -34,6 +34,9 @@ export interface DbProblem {
   solution_explanation?: string
   is_premium: boolean
   created_at?: string
+  question_type?: 'free_text' | 'multiple_choice'
+  mc_options?: Array<{key: string; text: string}>
+  mc_correct_answer?: string
 }
 
 export interface ProblemFilters {

@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Whiteboard, WhiteboardRef } from '@/components/Whiteboard';
 import { Calculator } from '@/components/Calculator';
+import { MultipleChoiceAnswer } from '@/components/MultipleChoiceAnswer';
 import {
   ArrowLeft,
   Play,
@@ -24,7 +25,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { submissionService } from '@/services/submissionService';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { getProblemById } from '@/services/problemService';
+import { getProblemById, DbProblem } from '@/services/problemService';
+import { answerValidationService, ValidationResult } from '@/services/answerValidationService';
 
 export default function PracticeInterface() {
   const navigate = useNavigate();
@@ -32,6 +34,7 @@ export default function PracticeInterface() {
   const { user } = useAuth();
   const whiteboardRef = useRef<WhiteboardRef>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
+  const [dbProblem, setDbProblem] = useState<DbProblem | null>(null);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [initialTime, setInitialTime] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -42,6 +45,9 @@ export default function PracticeInterface() {
   const [activeTab, setActiveTab] = useState('whiteboard');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedMcAnswer, setSelectedMcAnswer] = useState('');
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   useEffect(() => {
     const loadProblem = async () => {
@@ -55,29 +61,35 @@ export default function PracticeInterface() {
 
       try {
         setLoading(true);
-        const dbProblem = await getProblemById(problemId);
+        const fetchedDbProblem = await getProblemById(problemId);
 
-        if (!dbProblem) {
+        if (!fetchedDbProblem) {
           console.error('Problem not found:', problemId);
           toast.error('Problem not found');
           navigate('/practice');
           return;
         }
 
+        // Store the database problem for validation
+        setDbProblem(fetchedDbProblem);
+
         // Convert DbProblem to Problem format
         const mappedProblem: Problem = {
-          id: dbProblem.id,
-          title: dbProblem.title,
-          description: dbProblem.description,
-          detailedProblem: dbProblem.prompt || dbProblem.description,
-          difficulty: dbProblem.difficulty.charAt(0).toUpperCase() + dbProblem.difficulty.slice(1) as any,
-          topic: dbProblem.subject as any,
-          field: dbProblem.industry as any,
-          timeToSolve: dbProblem.time_limit_minutes || 30,
-          companies: dbProblem.companies || [],
-          isFree: !dbProblem.is_premium,
+          id: fetchedDbProblem.id,
+          title: fetchedDbProblem.title,
+          description: fetchedDbProblem.description,
+          detailedProblem: fetchedDbProblem.prompt || fetchedDbProblem.description,
+          difficulty: fetchedDbProblem.difficulty.charAt(0).toUpperCase() + fetchedDbProblem.difficulty.slice(1) as any,
+          topic: fetchedDbProblem.subject as any,
+          field: fetchedDbProblem.industry as any,
+          timeToSolve: fetchedDbProblem.time_limit_minutes || 30,
+          companies: fetchedDbProblem.companies || [],
+          isFree: !fetchedDbProblem.is_premium,
           isStarred: false,
-          hints: dbProblem.hints || [],
+          hints: fetchedDbProblem.hints || [],
+          questionType: fetchedDbProblem.question_type || 'free_text',
+          mcOptions: fetchedDbProblem.mc_options,
+          mcCorrectAnswer: fetchedDbProblem.mc_correct_answer,
         };
 
         setProblem(mappedProblem);
@@ -93,7 +105,12 @@ export default function PracticeInterface() {
               console.log('Loading existing submission:', existingSubmission);
               // Load saved answer and notes
               if (existingSubmission.user_answer) {
-                setAnswer(existingSubmission.user_answer);
+                // For MC questions, load into selectedMcAnswer
+                if (fetchedDbProblem.question_type === 'multiple_choice') {
+                  setSelectedMcAnswer(existingSubmission.user_answer);
+                } else {
+                  setAnswer(existingSubmission.user_answer);
+                }
               }
               if (existingSubmission.notes) {
                 setNotes(existingSubmission.notes);
@@ -143,10 +160,13 @@ export default function PracticeInterface() {
         const timeSpentMinutes = Math.round((initialTime - timeRemaining) / 60);
         const whiteboardDataToSave = whiteboardRef.current?.getCanvasData() || whiteboardData;
 
+        // Determine which answer to save based on question type
+        const finalAnswer = problem.questionType === 'multiple_choice' ? selectedMcAnswer : answer;
+
         await submissionService.submitAnswer({
           problem_id: problem.id,
           status: 'attempted',
-          user_answer: answer,
+          user_answer: finalAnswer,
           notes,
           whiteboard_data: whiteboardDataToSave,
           time_spent_minutes: timeSpentMinutes,
@@ -159,7 +179,7 @@ export default function PracticeInterface() {
     }, 30000); // Auto-save every 30 seconds
 
     return () => clearInterval(autoSaveInterval);
-  }, [problem, user, answer, notes, whiteboardData, timeRemaining, initialTime, hintsRevealed]);
+  }, [problem, user, answer, selectedMcAnswer, notes, whiteboardData, timeRemaining, initialTime, hintsRevealed]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -183,10 +203,13 @@ export default function PracticeInterface() {
       const timeSpentMinutes = Math.round((initialTime - timeRemaining) / 60);
       const whiteboardDataToSave = whiteboardRef.current?.getCanvasData() || whiteboardData;
 
+      // Determine which answer to save based on question type
+      const finalAnswer = problem.questionType === 'multiple_choice' ? selectedMcAnswer : answer;
+
       await submissionService.submitAnswer({
         problem_id: problem.id,
         status: 'attempted',
-        user_answer: answer,
+        user_answer: finalAnswer,
         notes,
         whiteboard_data: whiteboardDataToSave,
         time_spent_minutes: timeSpentMinutes,
@@ -207,10 +230,13 @@ export default function PracticeInterface() {
         const timeSpentMinutes = Math.round((initialTime - timeRemaining) / 60);
         const whiteboardDataToSave = whiteboardRef.current?.getCanvasData() || whiteboardData;
 
+        // Determine which answer to save based on question type
+        const finalAnswer = problem.questionType === 'multiple_choice' ? selectedMcAnswer : answer;
+
         await submissionService.submitAnswer({
           problem_id: problem.id,
           status: 'skipped',
-          user_answer: answer,
+          user_answer: finalAnswer,
           notes,
           whiteboard_data: whiteboardDataToSave,
           time_spent_minutes: timeSpentMinutes,
@@ -224,35 +250,58 @@ export default function PracticeInterface() {
   };
 
   const handleSubmit = async () => {
-    if (!answer.trim()) {
-      toast.error('Please enter your answer before submitting.');
+    // Determine answer based on question type
+    const finalAnswer = problem?.questionType === 'multiple_choice' ? selectedMcAnswer : answer;
+
+    if (!finalAnswer.trim()) {
+      toast.error('Please select an answer before submitting.');
       return;
     }
 
-    if (!problem || !user) {
+    if (!problem || !user || !dbProblem) {
       toast.error('Please log in to submit');
       return;
     }
 
     setIsSubmitting(true);
     try {
+      // Validate the answer
+      const validation = answerValidationService.validateAnswer(dbProblem, finalAnswer);
+      setValidationResult(validation);
+      setShowFeedback(true);
+
+      const status = answerValidationService.getSubmissionStatus(validation);
+
       const timeSpentMinutes = Math.round((initialTime - timeRemaining) / 60);
       const whiteboardDataToSave = whiteboardRef.current?.getCanvasData() || whiteboardData;
 
       await submissionService.submitAnswer({
         problem_id: problem.id,
-        status: 'solved', // In real app, this would be evaluated
-        user_answer: answer,
+        status,
+        user_answer: finalAnswer,
+        accuracy_score: validation.accuracyScore,
+        feedback: validation.feedback,
         notes,
         whiteboard_data: whiteboardDataToSave,
         time_spent_minutes: timeSpentMinutes,
         hints_used: hintsRevealed,
       });
-      toast.success('Solution submitted successfully!');
-      setTimeout(() => navigate('/practice'), 1500);
+
+      if (validation.isCorrect) {
+        toast.success(validation.feedback);
+      } else {
+        toast.error(validation.feedback);
+      }
+
+      // For MC, stay on page to show feedback
+      // For free-text, navigate away
+      if (problem.questionType !== 'multiple_choice') {
+        setTimeout(() => navigate('/practice'), 1500);
+      }
     } catch (error) {
       console.error('Error submitting answer:', error);
       toast.error('Failed to submit solution');
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -351,16 +400,47 @@ export default function PracticeInterface() {
             </Card>
             <Card className="p-6">
               <h3 className="mb-4">Your Answer</h3>
-              <Textarea placeholder="Enter your final answer with all calculations and reasoning..." value={answer} onChange={(e) => setAnswer(e.target.value)} className="min-h-[200px] mb-4" />
-              <div className="flex gap-4">
-                <Button onClick={handleSubmit} className="flex-1" disabled={isSubmitting}>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  {isSubmitting ? 'Submitting...' : 'Submit Solution'}
-                </Button>
-                <Button variant="outline" onClick={handleSkip} disabled={isSubmitting}>
-                  <SkipForward className="w-4 h-4 mr-2" />
-                  Skip Problem
-                </Button>
+
+              {problem.questionType === 'multiple_choice' && problem.mcOptions ? (
+                <>
+                  <MultipleChoiceAnswer
+                    options={problem.mcOptions}
+                    selectedAnswer={selectedMcAnswer}
+                    onAnswerChange={setSelectedMcAnswer}
+                    disabled={showFeedback}
+                    showFeedback={showFeedback}
+                    correctAnswer={showFeedback ? problem.mcCorrectAnswer : undefined}
+                  />
+
+                  {showFeedback && validationResult && (
+                    <Alert className={`mt-4 ${validationResult.isCorrect ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}`}>
+                      <AlertDescription>
+                        {validationResult.feedback}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </>
+              ) : (
+                <Textarea placeholder="Enter your final answer with all calculations and reasoning..." value={answer} onChange={(e) => setAnswer(e.target.value)} className="min-h-[200px] mb-4" />
+              )}
+
+              <div className="flex gap-4 mt-4">
+                {!showFeedback ? (
+                  <>
+                    <Button onClick={handleSubmit} className="flex-1" disabled={isSubmitting}>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      {isSubmitting ? 'Submitting...' : 'Submit Solution'}
+                    </Button>
+                    <Button variant="outline" onClick={handleSkip} disabled={isSubmitting}>
+                      <SkipForward className="w-4 h-4 mr-2" />
+                      Skip Problem
+                    </Button>
+                  </>
+                ) : (
+                  <Button onClick={() => navigate('/practice')} className="flex-1">
+                    Continue to Next Problem
+                  </Button>
+                )}
               </div>
             </Card>
           </div>

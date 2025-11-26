@@ -1,6 +1,12 @@
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 export type FieldOfStudy = 'Mechanical' | 'Electrical' | 'Civil' | 'Architecture' | 'Chemical' | 'Aerospace';
 export type Topic = 'Solid Mechanics' | 'Thermodynamics' | 'Fluid Mechanics' | 'Heat Transfer' | 'Circuits' | 'Structures' | 'Materials';
+export type QuestionType = 'free_text' | 'multiple_choice';
+
+export interface MultipleChoiceOption {
+  key: string; // 'A', 'B', 'C', 'D'
+  text: string;
+}
 
 export interface Problem {
   id: string;
@@ -15,6 +21,9 @@ export interface Problem {
   isFree: boolean;
   isStarred: boolean;
   hints: string[];
+  questionType?: QuestionType;
+  mcOptions?: MultipleChoiceOption[];
+  mcCorrectAnswer?: string;
   interviewContext?: {
     position: string;
     round: string;
