@@ -1,171 +1,141 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { useEffect, useRef, useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 export function Calculator() {
-  const [display, setDisplay] = useState('0');
-  const [previousValue, setPreviousValue] = useState<string | null>(null);
-  const [operation, setOperation] = useState<string | null>(null);
-  const [newNumber, setNewNumber] = useState(true);
+  const calculatorRef = useRef<HTMLDivElement>(null);
+  const calculatorInstance = useRef<Desmos.Calculator | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const scriptLoadedRef = useRef(false);
 
-  const handleNumber = (num: string) => {
-    if (newNumber) {
-      setDisplay(num);
-      setNewNumber(false);
-    } else {
-      setDisplay(display === '0' ? num : display + num);
-    }
-  };
+  useEffect(() => {
+    const apiKey = import.meta.env.VITE_DESMOS_API_KEY;
 
-  const handleOperation = (op: string) => {
-    const currentValue = display;
-    
-    if (previousValue !== null && operation !== null && !newNumber) {
-      calculate();
-    } else {
-      setPreviousValue(currentValue);
-    }
-    
-    setOperation(op);
-    setNewNumber(true);
-  };
-
-  const calculate = () => {
-    if (previousValue === null || operation === null) return;
-
-    const prev = parseFloat(previousValue);
-    const current = parseFloat(display);
-    let result = 0;
-
-    switch (operation) {
-      case '+':
-        result = prev + current;
-        break;
-      case '-':
-        result = prev - current;
-        break;
-      case '×':
-        result = prev * current;
-        break;
-      case '÷':
-        result = prev / current;
-        break;
-      default:
-        return;
+    if (!apiKey) {
+      setError('Desmos API key is not configured. Please add VITE_DESMOS_API_KEY to your environment variables.');
+      setIsLoading(false);
+      return;
     }
 
-    setDisplay(result.toString());
-    setPreviousValue(null);
-    setOperation(null);
-    setNewNumber(true);
-  };
+    // Function to load Desmos API script
+    const loadDesmosScript = () => {
+      return new Promise<void>((resolve, reject) => {
+        // Check if script is already loaded
+        if (window.Desmos) {
+          resolve();
+          return;
+        }
 
-  const handleClear = () => {
-    setDisplay('0');
-    setPreviousValue(null);
-    setOperation(null);
-    setNewNumber(true);
-  };
+        // Check if script element already exists
+        const existingScript = document.getElementById('desmos-api-script');
+        if (existingScript && scriptLoadedRef.current) {
+          // Wait for the script to finish loading
+          const checkDesmos = setInterval(() => {
+            if (window.Desmos) {
+              clearInterval(checkDesmos);
+              resolve();
+            }
+          }, 100);
+          return;
+        }
 
-  const handleDecimal = () => {
-    if (newNumber) {
-      setDisplay('0.');
-      setNewNumber(false);
-    } else if (!display.includes('.')) {
-      setDisplay(display + '.');
-    }
-  };
+        // Create and load the script
+        const script = document.createElement('script');
+        script.id = 'desmos-api-script';
+        script.src = `https://www.desmos.com/api/v1.11/calculator.js?apiKey=${apiKey}`;
+        script.async = true;
 
-  const handleBackspace = () => {
-    if (display.length > 1) {
-      setDisplay(display.slice(0, -1));
-    } else {
-      setDisplay('0');
-      setNewNumber(true);
-    }
-  };
+        script.onload = () => {
+          scriptLoadedRef.current = true;
+          resolve();
+        };
 
-  const buttonClass = "h-12 text-lg";
-  const operationClass = "h-12 text-lg bg-blue-500 hover:bg-blue-600 text-white";
+        script.onerror = () => {
+          reject(new Error('Failed to load Desmos API script'));
+        };
+
+        // Replace the placeholder script tag or append to head
+        const placeholderScript = document.getElementById('desmos-api-script');
+        if (placeholderScript && placeholderScript.parentNode) {
+          placeholderScript.parentNode.replaceChild(script, placeholderScript);
+        } else {
+          document.head.appendChild(script);
+        }
+      });
+    };
+
+    // Initialize calculator
+    const initializeCalculator = async () => {
+      try {
+        await loadDesmosScript();
+
+        if (!calculatorRef.current) {
+          setError('Calculator container not found');
+          setIsLoading(false);
+          return;
+        }
+
+        // Initialize the graphing calculator
+        const calculator = window.Desmos.GraphingCalculator(calculatorRef.current, {
+          keypad: true,
+          expressions: true,
+          settingsMenu: true,
+          expressionsTopbar: true,
+          border: false,
+          fontSize: 14,
+        });
+
+        calculatorInstance.current = calculator;
+        setIsLoading(false);
+        setError(null);
+      } catch (err) {
+        console.error('Error initializing Desmos calculator:', err);
+        setError(err instanceof Error ? err.message : 'Failed to initialize calculator');
+        setIsLoading(false);
+      }
+    };
+
+    initializeCalculator();
+
+    // Cleanup function
+    return () => {
+      if (calculatorInstance.current) {
+        try {
+          calculatorInstance.current.destroy();
+          calculatorInstance.current = null;
+        } catch (err) {
+          console.error('Error destroying calculator:', err);
+        }
+      }
+    };
+  }, []);
 
   return (
-    <Card className="p-4 w-full max-w-xs" role="region" aria-label="Calculator">
-      <div className="mb-4 p-3 bg-gray-100 rounded text-right" role="status" aria-live="polite">
-        <div className="text-sm text-gray-500 h-6" aria-label="Previous calculation">
-          {previousValue && operation ? `${previousValue} ${operation}` : ''}
+    <Card className="p-4 w-full" role="region" aria-label="Calculator">
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {isLoading && !error && (
+        <div className="flex items-center justify-center p-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-2"></div>
+            <p className="text-sm text-gray-600">Loading calculator...</p>
+          </div>
         </div>
-        <div className="text-2xl break-all" aria-label="Calculator display">{display}</div>
-      </div>
+      )}
 
-      <div className="grid grid-cols-4 gap-2" role="grid" aria-label="Calculator buttons">
-        <Button variant="outline" className={buttonClass} onClick={handleClear} aria-label="Clear all">
-          AC
-        </Button>
-        <Button variant="outline" className={buttonClass} onClick={handleBackspace} aria-label="Backspace">
-          ←
-        </Button>
-        <Button variant="outline" className={buttonClass} onClick={() => handleOperation('÷')} aria-label="Divide">
-          ÷
-        </Button>
-        <Button className={operationClass} onClick={() => handleOperation('×')} aria-label="Multiply">
-          ×
-        </Button>
-
-        <Button variant="outline" className={buttonClass} onClick={() => handleNumber('7')}>
-          7
-        </Button>
-        <Button variant="outline" className={buttonClass} onClick={() => handleNumber('8')}>
-          8
-        </Button>
-        <Button variant="outline" className={buttonClass} onClick={() => handleNumber('9')}>
-          9
-        </Button>
-        <Button className={operationClass} onClick={() => handleOperation('-')} aria-label="Subtract">
-          −
-        </Button>
-
-        <Button variant="outline" className={buttonClass} onClick={() => handleNumber('4')} aria-label="4">
-          4
-        </Button>
-        <Button variant="outline" className={buttonClass} onClick={() => handleNumber('5')} aria-label="5">
-          5
-        </Button>
-        <Button variant="outline" className={buttonClass} onClick={() => handleNumber('6')} aria-label="6">
-          6
-        </Button>
-        <Button className={operationClass} onClick={() => handleOperation('+')} aria-label="Add">
-          +
-        </Button>
-
-        <Button variant="outline" className={buttonClass} onClick={() => handleNumber('1')}>
-          1
-        </Button>
-        <Button variant="outline" className={buttonClass} onClick={() => handleNumber('2')}>
-          2
-        </Button>
-        <Button variant="outline" className={buttonClass} onClick={() => handleNumber('3')}>
-          3
-        </Button>
-        <Button
-          className="row-span-2 h-full bg-green-500 hover:bg-green-600 text-white text-lg"
-          onClick={calculate}
-          aria-label="Calculate result"
-        >
-          =
-        </Button>
-
-        <Button
-          variant="outline"
-          className="col-span-2 h-12 text-lg"
-          onClick={() => handleNumber('0')}
-          aria-label="0"
-        >
-          0
-        </Button>
-        <Button variant="outline" className={buttonClass} onClick={handleDecimal} aria-label="Decimal point">
-          .
-        </Button>
-      </div>
+      <div
+        ref={calculatorRef}
+        className={`${isLoading || error ? 'hidden' : ''}`}
+        style={{ width: '100%', height: '600px' }}
+        aria-label="Desmos Graphing Calculator"
+      />
     </Card>
   );
 }
