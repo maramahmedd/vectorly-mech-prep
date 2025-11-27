@@ -366,9 +366,9 @@ export default function PracticeInterface() {
                 <Badge variant="outline">{problem.topic}</Badge>
                 <Badge variant="outline">{problem.field}</Badge>
               </div>
-              <ScrollArea className="h-96">
+              <div className="max-h-96 overflow-y-auto">
                 <div className="pr-4 whitespace-pre-wrap">{problem.detailedProblem}</div>
-              </ScrollArea>
+              </div>
             </Card>
             <Card className="p-6">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
