@@ -25,7 +25,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { submissionService } from '@/services/submissionService';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { getProblemById, DbProblem } from '@/services/problemService';
+import { getProblemById, DbProblem, getNextProblemOfSameType } from '@/services/problemService';
 import { answerValidationService, ValidationResult } from '@/services/answerValidationService';
 
 export default function PracticeInterface() {
@@ -193,6 +193,31 @@ export default function PracticeInterface() {
     }
   };
 
+  const navigateToNextProblem = async () => {
+    if (!problem) {
+      navigate('/practice');
+      return;
+    }
+
+    try {
+      // Get the next problem of the same type
+      const nextProblem = await getNextProblemOfSameType(problem.id);
+
+      if (nextProblem) {
+        // Navigate to the next problem
+        navigate(`/practice/interface?problem=${nextProblem.id}`);
+      } else {
+        // No more problems of this type, go back to practice page
+        toast.info('No more problems of this type available. Returning to practice page.');
+        navigate('/practice');
+      }
+    } catch (error) {
+      console.error('Error getting next problem:', error);
+      // Fall back to practice page on error
+      navigate('/practice');
+    }
+  };
+
   const handleSave = async () => {
     if (!problem || !user) {
       toast.error('Please log in to save your progress');
@@ -246,7 +271,9 @@ export default function PracticeInterface() {
         console.error('Error saving skip:', error);
       }
     }
-    navigate('/practice');
+
+    // Try to navigate to next problem of same type
+    await navigateToNextProblem();
   };
 
   const handleSubmit = async () => {
@@ -294,9 +321,9 @@ export default function PracticeInterface() {
       }
 
       // For MC, stay on page to show feedback
-      // For free-text, navigate away
+      // For free-text, navigate to next problem of same type
       if (problem.questionType !== 'multiple_choice') {
-        setTimeout(() => navigate('/practice'), 1500);
+        setTimeout(() => navigateToNextProblem(), 1500);
       }
     } catch (error) {
       console.error('Error submitting answer:', error);
@@ -437,7 +464,7 @@ export default function PracticeInterface() {
                     </Button>
                   </>
                 ) : (
-                  <Button onClick={() => navigate('/practice')} className="flex-1">
+                  <Button onClick={navigateToNextProblem} className="flex-1">
                     Continue to Next Problem
                   </Button>
                 )}

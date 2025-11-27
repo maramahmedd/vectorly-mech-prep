@@ -164,3 +164,48 @@ export async function getProblemById(problemId: string): Promise<DbProblem | nul
   return data as DbProblem
 }
 
+// Get the next problem of the same type (question_type)
+export async function getNextProblemOfSameType(
+  currentProblemId: string,
+  excludeProblemIds: string[] = []
+): Promise<DbProblem | null> {
+  try {
+    // First, get the current problem to determine its type
+    const currentProblem = await getProblemById(currentProblemId)
+    if (!currentProblem) return null
+
+    const questionType = currentProblem.question_type || 'free_text'
+
+    // Build the query to find problems of the same type
+    let query = supabase
+      .from('problems')
+      .select('*')
+      .eq('question_type', questionType)
+      .neq('id', currentProblemId) // Exclude the current problem
+
+    // Exclude any additional problem IDs (e.g., already attempted)
+    if (excludeProblemIds.length > 0) {
+      query = query.not('id', 'in', `(${excludeProblemIds.join(',')})`)
+    }
+
+    // Order randomly and limit to 1
+    const { data, error } = await query.limit(50) // Get 50 candidates
+
+    if (error) {
+      console.error('Error fetching next problem:', error)
+      return null
+    }
+
+    if (!data || data.length === 0) {
+      return null
+    }
+
+    // Randomly select one from the candidates
+    const randomIndex = Math.floor(Math.random() * data.length)
+    return data[randomIndex] as DbProblem
+  } catch (error) {
+    console.error('Error in getNextProblemOfSameType:', error)
+    return null
+  }
+}
+
